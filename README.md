@@ -13,6 +13,7 @@ Fonte: M. O. Jones e S. Dsouza, *Manufacturing the “Great Replacement”* (202
 - **Seguire i soldi: il giro del mondo della campagna** – `seguire-i-soldi/` – Mappa interattiva a tappe con emoji: account, intermediari, indizi
 - **Solo in italiano vincono i pollici in su** – `pollici/` – Cento commenti in emoji, lingua per lingua
 - **Che cosa vedevano gli italiani** – `feed-italiano/` – Il copione e un anno di annunci, con emoji
+- **Gli annunci, guardati da vicino** – `annunci-video/` – sei annunci video (cartella `video/`: ricodificati 360×640, senza audio)
 
 ## Trasformazioni
 - `italia-piattaforme.csv`: «Altri annunci» = 76,2 milioni (totale Italia) − 37,5 (YouTube).
