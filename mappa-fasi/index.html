@@ -22,6 +22,7 @@
   .phase-info { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 14px; color: var(--ink-2); margin: 0 0 4px; }
   .phase-info .emo { font-size: 26px; line-height: 1; }
   .phase-info b { color: var(--ink); }
+  .chip { display: inline-block; font-size: 12px; font-weight: 700; color: var(--ink); border: 1px solid var(--ink-2); border-radius: 999px; padding: 1px 9px; margin: 0 1px; vertical-align: 1px; }
   .land { fill: var(--grey-5); stroke: var(--bg); stroke-width: 0.6; }
   :root[data-theme="dark"] .land { fill: #26282a; }
   .land.hit-c { fill: var(--blue-5); }
@@ -55,10 +56,11 @@
 <script>
 (function () {
   var R = Radar, fmt = R.fmt, f1 = function (v) { return fmt(v, 1); };
+  var chip = function (n) { return '<span class="chip">' + n + "</span>"; };
   var PHASES = [
-    { k: "Fase 1", emo: "📘", txt: "<b>Ottobre 2023-luglio 2024.</b> Quasi tutta su Facebook: Regno Unito, Stati Uniti, Francia" },
+    { k: "Fase 1", emo: "📲", txt: "<b>Ottobre 2023-luglio 2024.</b> Quasi tutta su " + chip("Facebook") + ": Regno Unito, Stati Uniti, Francia" },
     { k: "Fase 2", emo: "⏸️", txt: "<b>Novembre-dicembre 2024.</b> Una breve parentesi, rivolta soprattutto all'Ungheria" },
-    { k: "Fase 3", emo: "📱", txt: "<b>Ottobre 2025-ottobre 2026.</b> Passa a YouTube e TikTok, lascia gli Usa e scopre l'Italia" },
+    { k: "Fase 3", emo: "▶️", txt: "<b>Ottobre 2025-ottobre 2026.</b> Passa ai video su " + chip("YouTube") + chip("TikTok") + ", lascia gli Usa e scopre l'Italia" },
     { k: "Tre anni", emo: "🗓️", txt: "<b>Ottobre 2023-ottobre 2026.</b> Le tre fasi sommate" }
   ];
   var cur = 2;

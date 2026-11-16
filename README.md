@@ -14,6 +14,8 @@ Fonte: M. O. Jones e S. Dsouza, *Manufacturing the “Great Replacement”* (202
 - **Solo in italiano vincono i pollici in su** – `pollici/` – Cento commenti in emoji, lingua per lingua
 - **Che cosa vedevano gli italiani** – `feed-italiano/` – Il copione e un anno di annunci, con emoji
 - **Gli annunci, guardati da vicino** – `annunci-video/` – sei annunci video (cartella `video/`: ricodificati 360×640, senza audio)
+- **Quanto ne sai? Indovina il numero** – `indovina/` – quiz con cursore (dati in `data/quiz.csv`)
+- **Video con i dati** – `video/campagna-qatar-16x9.mp4`, `video/campagna-qatar-9x16.mp4` (30 s)
 
 ## Trasformazioni
 - `italia-piattaforme.csv`: «Altri annunci» = 76,2 milioni (totale Italia) − 37,5 (YouTube).

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Indovina il numero: la campagna anti-Qatar – Radar QN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap">
+<link rel="stylesheet" href="../assets/radar.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="../assets/radar.js"></script>
+<style>
+  .card { border-top: 3px solid var(--ink); padding-top: 16px; margin-top: 22px; }
+  .step { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); display: flex; justify-content: space-between; }
+  .q { display: grid; grid-template-columns: 64px 1fr; gap: 14px; align-items: center; margin: 14px 0 22px; }
+  .q .e { font-size: 50px; line-height: 1; text-align: center; }
+  .q h2 { font-family: var(--serif); font-size: 26px; line-height: 1.15; margin: 0; color: var(--title); }
+  .guess { text-align: center; }
+  .guess .val { font-size: 54px; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1; }
+  .guess .unit { font-size: 15px; color: var(--ink-2); margin-top: 4px; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 4px; background: var(--rule); margin: 22px 0 6px; outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; border-radius: 50%; background: var(--blue); border: 4px solid var(--bg); box-shadow: 0 0 0 1px var(--blue); cursor: grab; }
+  input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: var(--blue); border: 4px solid var(--bg); cursor: grab; }
+  input[type=range]:disabled::-webkit-slider-thumb { background: var(--grey); box-shadow: 0 0 0 1px var(--grey); }
+  .ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .btn { display: block; margin: 22px auto 0; font: 700 15px var(--sans); color: var(--bg); background: var(--ink); border: 0; border-radius: 999px; padding: 12px 26px; cursor: pointer; }
+  .btn:hover { opacity: 0.88; }
+  .reveal svg { display: block; overflow: visible; }
+  .verdict { font-size: 20px; font-weight: 700; margin: 6px 0 4px; }
+  .expl { font-size: 15px; line-height: 1.5; margin: 0; }
+  .final { text-align: center; padding: 10px 0; }
+  .final .big { font-size: 64px; line-height: 1; }
+  .final h2 { font-family: var(--serif); font-size: 30px; margin: 10px 0 6px; color: var(--title); }
+  .final p { font-size: 15px; color: var(--ink-2); margin: 0 auto; max-width: 460px; line-height: 1.5; }
+  .recap { list-style: none; padding: 0; margin: 20px 0 0; text-align: left; }
+  .recap li { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--rule); font-size: 14px; }
+  .recap li span:first-child { font-size: 22px; }
+  .recap b { font-variant-numeric: tabular-nums; }
+  .fadein { animation: fi 380ms ease both; }
+  @keyframes fi { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .fadein { animation: none; } }
+  @media (max-width: 519px) { .q { grid-template-columns: 48px 1fr; } .q .e { font-size: 38px; } .q h2 { font-size: 22px; } .guess .val { font-size: 46px; } }
+</style>
+</head>
+<body>
+<main class="radar">
+  <header>
+    <h1 class="r-title">Quanto ne sai? Indovina il numero</h1>
+    <p class="r-sub">Cinque domande sulla campagna anti-Qatar. Sposta il cursore, conferma e scopri il dato vero</p>
+  </header>
+
+  <div class="card" id="card" aria-live="polite"></div>
+
+  <footer class="r-foot">
+    <span>Fonte: M. O. Jones e S. Dsouza, <i>Manufacturing the “Great Replacement”</i> (2026)</span>
+    <span>Elaborazione Radar – QN</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var R = Radar, fmt = R.fmt;
+  R.loadCSV("../data/quiz.csv").then(function (rows) {
+    var qs = rows.map(function (r) {
+      return { e: r["Emoji"], q: r["Domanda"], min: R.num(r["Min"]), max: R.num(r["Max"]), step: R.num(r["Passo"]),
+        unit: r["Unità"], a: R.num(r["Risposta"]), dec: R.num(r["Decimali"]), x: r["Spiegazione"] };
+    });
+    var cur = 0, results = [];
+    var card = d3.select("#card");
+
+    function closeness(q, g) { return Math.max(0, 1 - Math.abs(g - q.a) / ((q.max - q.min) * 0.5)); }
+    function verdict(c) {
+      if (c > 0.95) return ["🎯", "Centro pieno!"];
+      if (c > 0.85) return ["👏", "Ci sei quasi"];
+      if (c > 0.6) return ["🤏", "Non lontano"];
+      return ["😮", "Fuori strada"];
+    }
+
+    function ask() {
+      var q = qs[cur];
+      var start = q.min + Math.round((q.max - q.min) / 2 / q.step) * q.step;
+      card.html("").classed("fadein", false);
+      void card.node().offsetWidth; card.classed("fadein", true);
+      card.append("div").attr("class", "step").html("<span>Domanda " + (cur + 1) + " di " + qs.length + "</span><span>" + "●".repeat(cur + 1) + "○".repeat(qs.length - cur - 1) + "</span>");
+      var qq = card.append("div").attr("class", "q");
+      qq.append("span").attr("class", "e").attr("aria-hidden", "true").text(q.e);
+      qq.append("h2").text(q.q);
+      var gs = card.append("div").attr("class", "guess");
+      var val = gs.append("div").attr("class", "val");
+      gs.append("div").attr("class", "unit").text(q.unit + " · la tua stima");
+      var input = card.append("input").attr("type", "range").attr("min", q.min).attr("max", q.max).attr("step", q.step)
+        .attr("aria-label", "La tua stima, in " + q.unit).property("value", start);
+      card.append("div").attr("class", "ends").html("<span>" + fmt(q.min, q.dec) + "</span><span>" + fmt(q.max, q.dec) + "</span>");
+      var upd = function () { val.text(fmt(+input.property("value"), q.dec)); };
+      input.on("input", upd); upd();
+      var reveal = card.append("div").attr("class", "reveal");
+      var btn = card.append("button").attr("class", "btn").text("Conferma");
+      btn.on("click", function () {
+        var g = +input.property("value");
+        input.attr("disabled", true);
+        btn.remove();
+        show(reveal, q, g);
+      });
+      R.scheduleHeight();
+    }
+
+    function show(host, q, g) {
+      var c = closeness(q, g), v = verdict(c);
+      results.push({ q: q, g: g, c: c });
+      var W = host.node().getBoundingClientRect().width, H = 96;
+      var x = d3.scaleLinear().domain([q.min, q.max]).range([12, W - 12]);
+      var svg = host.append("svg").attr("width", W).attr("height", H).attr("role", "img")
+        .attr("aria-label", "La tua stima: " + fmt(g, q.dec) + ". Il dato vero: " + fmt(q.a, q.dec) + " " + q.unit + ".");
+      svg.append("line").attr("x1", x(q.min)).attr("x2", x(q.max)).attr("y1", 50).attr("y2", 50).style("stroke", "var(--rule)").style("stroke-width", 8).style("stroke-linecap", "round");
+      // la distanza tra stima e dato si colora
+      var gap = svg.append("line").attr("y1", 50).attr("y2", 50).attr("x1", x(g)).attr("x2", x(g))
+        .style("stroke", "var(--red)").style("stroke-width", 8).style("stroke-opacity", 0.35).style("stroke-linecap", "round");
+      svg.append("circle").attr("cx", x(g)).attr("cy", 50).attr("r", 11).style("fill", "var(--blue)").style("stroke", "var(--bg)").style("stroke-width", 3);
+      svg.append("text").attr("x", x(g)).attr("y", 88).attr("text-anchor", x(g) < 60 ? "start" : (x(g) > W - 60 ? "end" : "middle"))
+        .attr("class", "tick-label").style("fill", "var(--blue)").style("font-weight", 600).text("Tu: " + fmt(g, q.dec));
+      var dot = svg.append("circle").attr("cy", 50).attr("r", 11).style("fill", "var(--red)").style("stroke", "var(--bg)").style("stroke-width", 3).attr("cx", x(g));
+      var lab = svg.append("text").attr("y", 22).attr("class", "val-label").style("font-size", "15px").style("fill", "var(--red)")
+        .attr("text-anchor", x(q.a) < 60 ? "start" : (x(q.a) > W - 60 ? "end" : "middle")).attr("x", x(q.a)).style("opacity", 0)
+        .text("Dato vero: " + fmt(q.a, q.dec));
+      var d = R.reduced ? 0 : 900;
+      dot.transition().duration(d).ease(d3.easeCubicOut).attr("cx", x(q.a));
+      gap.transition().duration(d).ease(d3.easeCubicOut).attr("x2", x(q.a));
+      lab.transition().delay(d * 0.6).duration(300).style("opacity", 1);
+
+      var out = host.append("div").attr("class", "fadein").style("animation-delay", (d / 1000) + "s");
+      out.append("div").attr("class", "verdict").text(v[0] + " " + v[1]);
+      out.append("p").attr("class", "expl").text(q.x);
+      out.append("button").attr("class", "btn").text(cur < qs.length - 1 ? "Prossima domanda →" : "Vedi il risultato")
+        .on("click", function () { cur++; if (cur < qs.length) ask(); else end(); });
+      R.scheduleHeight();
+    }
+
+    function end() {
+      var avg = d3.mean(results, function (r) { return r.c; });
+      var hits = results.filter(function (r) { return r.c > 0.85; }).length;
+      var badge = avg > 0.85 ? ["🕵️", "Occhio da investigatore"] : avg > 0.65 ? ["🔎", "Buon fiuto"] : ["📚", "C'è da leggere il rapporto"];
+      card.html("").classed("fadein", false); void card.node().offsetWidth; card.classed("fadein", true);
+      var f = card.append("div").attr("class", "final");
+      f.append("div").attr("class", "big").attr("aria-hidden", "true").text(badge[0]);
+      f.append("h2").text(badge[1]);
+      f.append("p").text("Sei andato vicino al dato vero in " + hits + (hits === 1 ? " domanda" : " domande") + " su " + qs.length + ". Precisione media: " + R.pct(avg, 0) + ".");
+      var ul = f.append("ul").attr("class", "recap");
+      results.forEach(function (r) {
+        ul.append("li").html("<span aria-hidden='true'>" + r.q.e + "</span><span>" + r.q.q + "</span><span>tu <b>" + fmt(r.g, r.q.dec) + "</b> · vero <b style='color:var(--red)'>" + fmt(r.q.a, r.q.dec) + "</b></span>");
+      });
+      f.append("button").attr("class", "btn").text("Rigioca").on("click", function () { cur = 0; results = []; ask(); });
+      R.scheduleHeight();
+    }
+    ask();
+  }).catch(function (e) { R.fail("#card", e); });
+})();
+</script>
+</body>
+</html>
