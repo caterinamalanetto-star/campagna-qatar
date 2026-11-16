@@ -30,10 +30,17 @@
   .bub { stroke: var(--bg); stroke-width: 1.5; }
   .bub-lab { font-size: 13px; font-weight: 700; fill: var(--ink); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
   .bub-lab .v { font-weight: 500; fill: var(--ink-2); }
-  .r-tip.pop { max-width: 236px; min-width: 200px; padding: 8px; }
-  .pop-media { position: relative; margin: 6px 0 8px; border-radius: 8px; overflow: hidden; background: #000; }
-  .pop-media video, .pop-media img { display: block; width: 100%; max-height: 220px; object-fit: contain; background: #000; }
-  .pop-media span { position: absolute; left: 6px; top: 6px; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; background: rgba(209,69,47,0.95); padding: 3px 6px; border-radius: 3px; }
+  /* finestrella a forma di telefono */
+  .r-tip.pop { width: 168px; min-width: 0; max-width: none; padding: 0; background: #1b1c1e; border: 0; border-radius: 26px; box-shadow: 0 12px 30px rgba(0,0,0,0.28); }
+  .r-tip.pop .scr { position: relative; margin: 7px; border-radius: 20px; overflow: hidden; background: #000; aspect-ratio: 9 / 16; }
+  .r-tip.pop .scr::before { content: ""; position: absolute; top: 6px; left: 50%; width: 46px; height: 12px; margin-left: -23px; border-radius: 8px; background: #1b1c1e; z-index: 2; }
+  .r-tip.pop .scr video, .r-tip.pop .scr img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .r-tip.pop .scr img { object-fit: contain; object-position: 50% 30%; }
+  .r-tip.pop .cap { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 26px 9px 9px; color: #fff; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.82) 45%); font-size: 12px; line-height: 1.3; }
+  .r-tip.pop .cap b { display: block; font-size: 14px; }
+  .r-tip.pop .cap .v { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+  .r-tip.pop .cap .v small { font-size: 11px; font-weight: 500; opacity: 0.85; }
+  .r-tip.pop .cap .ph { opacity: 0.8; font-size: 11px; font-variant-numeric: tabular-nums; }
   .land.has-media { cursor: pointer; }
   .inset { fill: none; stroke: var(--ink-2); stroke-dasharray: 3 3; stroke-width: 0.75; }
 </style>
@@ -170,17 +177,15 @@
       api = draw;
       function pop(d, x, y) {
         bubs.classed("is-dimmed", function (q) { return q !== d; });
-        var m = MEDIA[d.iso], media = "";
+        var m = MEDIA[d.iso], html;
+        var cap = '<div class="cap"><b>' + d.k + '</b><span class="v">' + f1(d.v[cur]) + " <small>mln · " + PHASES[cur].k.toLowerCase() + "</small></span>" +
+          '<div class="ph">F1 ' + f1(d.v[0]) + " · F2 " + f1(d.v[1]) + " · F3 " + f1(d.v[2]) + "</div></div>";
         if (m) {
           var src = "../video/paesi/" + d.iso;
-          media = '<div class="pop-media"><span>Annuncio ' + m[1] + "</span>" + (m[0] === "mp4"
+          html = '<div class="scr">' + (m[0] === "mp4"
             ? '<video src="' + src + '.mp4" poster="' + src + '.jpg" autoplay muted loop playsinline disablepictureinpicture></video>'
-            : '<img alt="Annuncio della campagna rivolto all\'' + d.k + '" src="' + src + '.jpg">') + "</div>";
-        }
-        var html = R.tipHTML({ title: d.k, value: f1(d.v[cur]), unit: "mln · " + PHASES[cur].k.toLowerCase(),
-          rows: [["Fase 1", f1(d.v[0])], ["Fase 2", f1(d.v[1])], ["Fase 3", f1(d.v[2])]],
-          note: d.iso === "ITA" ? "Nessun annuncio rivolto all'Italia prima di ottobre 2025" : null });
-        html = html.replace('</div>', '</div>' + media); // il video subito sotto il nome del Paese
+            : '<img alt="Annuncio della campagna rivolto all\'' + d.k + '" src="' + src + '.jpg">') + cap + "</div>";
+        } else html = '<div class="scr" style="background:#222">' + cap + "</div>";
         d3.select(tip.node).classed("pop", true);
         tip.show(html, x, y);
         var v = tip.node.querySelector("video"); if (v) { var p = v.play(); if (p && p.catch) p.catch(function () {}); }
