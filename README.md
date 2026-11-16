@@ -26,5 +26,7 @@ Fonte: M. O. Jones e S. Dsouza, *Manufacturing the “Great Replacement”* (202
 - `pollici`: la terza categoria (💬) è 100 meno favorevoli e contrari.
 - `europa.geojson`, `mondo.geojson`: confini Natural Earth semplificati.
 
+- `video/paesi/`: un annuncio per Paese nella mappa a fasi (Italia, Francia, Germania, Regno Unito, Stati Uniti, Libano; Ungheria: immagine). Paese attribuito in base alla lingua e al contenuto.
+
 ## Pubblicazione
 GitHub Pages: Settings → Pages → Deploy from a branch → `main` / root. 

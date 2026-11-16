@@ -30,6 +30,11 @@
   .bub { stroke: var(--bg); stroke-width: 1.5; }
   .bub-lab { font-size: 13px; font-weight: 700; fill: var(--ink); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
   .bub-lab .v { font-weight: 500; fill: var(--ink-2); }
+  .r-tip.pop { max-width: 236px; min-width: 200px; padding: 8px; }
+  .pop-media { position: relative; margin: 6px 0 8px; border-radius: 8px; overflow: hidden; background: #000; }
+  .pop-media video, .pop-media img { display: block; width: 100%; max-height: 220px; object-fit: contain; background: #000; }
+  .pop-media span { position: absolute; left: 6px; top: 6px; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; background: rgba(209,69,47,0.95); padding: 3px 6px; border-radius: 3px; }
+  .land.has-media { cursor: pointer; }
   .inset { fill: none; stroke: var(--ink-2); stroke-dasharray: 3 3; stroke-width: 0.75; }
 </style>
 </head>
@@ -37,7 +42,7 @@
 <main class="radar">
   <header>
     <h1 class="r-title">Dove è passata la campagna, fase per fase</h1>
-    <p class="r-sub">Esposizioni agli annunci della campagna anti-Qatar per Paese, in milioni. Scegli una fase</p>
+    <p class="r-sub">Esposizioni agli annunci della campagna anti-Qatar per Paese, in milioni. Scegli una fase e passa sopra un Paese per vedere uno dei suoi annunci</p>
   </header>
 
   <div class="seg" id="seg" role="tablist" aria-label="Fase della campagna"></div>
@@ -64,6 +69,9 @@
     { k: "Tre anni", emo: "🗓️", txt: "<b>Ottobre 2023-ottobre 2026.</b> Le tre fasi sommate" }
   ];
   var cur = 2;
+  // un annuncio per Paese (video in loop, per l'Ungheria un'immagine)
+  var MEDIA = { ITA: ["mp4", "in italiano"], FRA: ["mp4", "in francese"], DEU: ["mp4", "in tedesco"], GBR: ["mp4", "in inglese"],
+    USA: ["mp4", "in inglese"], LBN: ["mp4", "in francese"], HUN: ["jpg", "in inglese"] };
 
   Promise.all([R.loadCSV("../data/mappa-esposizioni.csv"), fetch("../data/europa.geojson").then(function (r) { return r.json(); })]).then(function (res) {
     var rows = res[0].map(function (r) {
@@ -88,7 +96,7 @@
 
     var host = document.getElementById("map");
     var tip = R.tooltip(host);
-    R.dismissOutside(host, function () { tip.hide(); });
+    R.dismissOutside(host, function () { tip.hide(); var v = tip.node.querySelector("video"); if (v) v.pause(); });
     var api = null, ready = false;
 
     function update(animate) {
@@ -160,13 +168,35 @@
         labs.filter(function (d) { return d.iso === "USA"; }).attr("y", ib.y + ib.h - 6).style("font-size", "12px");
       }
       api = draw;
-      bubs.on("pointerenter pointerdown", function (ev, d) {
+      function pop(d, x, y) {
         bubs.classed("is-dimmed", function (q) { return q !== d; });
-        tip.show(R.tipHTML({ title: d.k, value: f1(d.v[cur]), unit: "mln · " + PHASES[cur].k.toLowerCase(),
+        var m = MEDIA[d.iso], media = "";
+        if (m) {
+          var src = "../video/paesi/" + d.iso;
+          media = '<div class="pop-media"><span>Annuncio ' + m[1] + "</span>" + (m[0] === "mp4"
+            ? '<video src="' + src + '.mp4" poster="' + src + '.jpg" autoplay muted loop playsinline disablepictureinpicture></video>'
+            : '<img alt="Annuncio della campagna rivolto all\'' + d.k + '" src="' + src + '.jpg">') + "</div>";
+        }
+        var html = R.tipHTML({ title: d.k, value: f1(d.v[cur]), unit: "mln · " + PHASES[cur].k.toLowerCase(),
           rows: [["Fase 1", f1(d.v[0])], ["Fase 2", f1(d.v[1])], ["Fase 3", f1(d.v[2])]],
-          note: d.iso === "ITA" ? "Nessun annuncio rivolto all'Italia prima di ottobre 2025" : null }), d.x, d.y - 10);
-      }).on("pointerleave", function (ev) { if (ev.pointerType === "mouse") { tip.hide(); bubs.classed("is-dimmed", false); } });
-
+          note: d.iso === "ITA" ? "Nessun annuncio rivolto all'Italia prima di ottobre 2025" : null });
+        html = html.replace('</div>', '</div>' + media); // il video subito sotto il nome del Paese
+        d3.select(tip.node).classed("pop", true);
+        tip.show(html, x, y);
+        var v = tip.node.querySelector("video"); if (v) { var p = v.play(); if (p && p.catch) p.catch(function () {}); }
+      }
+      ins.select("rect").style("pointer-events", "all").style("cursor", "pointer")
+        .on("pointerenter pointerdown", function () { pop(usa, usa.x + 30, usa.y - 10); })
+        .on("pointerleave", function (ev) { if (ev.pointerType === "mouse") unpop(); });
+      function unpop() { tip.hide(); bubs.classed("is-dimmed", false); var v = tip.node.querySelector("video"); if (v) v.pause(); }
+      bubs.on("pointerenter pointerdown", function (ev, d) { pop(d, d.x, d.y - 10); })
+        .on("pointerleave", function (ev) { if (ev.pointerType === "mouse") unpop(); });
+      land.classed("has-media", function (f) { return !!(byIso[f.properties.iso] && MEDIA[f.properties.iso]); })
+        .on("pointerenter pointerdown", function (ev, f) {
+          var d = byIso[f.properties.iso]; if (!d || !MEDIA[d.iso]) return;
+          pop(d, d.x, d.y - 10);
+        })
+        .on("pointerleave", function (ev, f) { if (ev.pointerType === "mouse" && byIso[f.properties.iso]) unpop(); });
       if (phase !== "pre") ready = true;
       draw(phase === "play");
       if (phase === "pre") { bubs.attr("r", 0); labs.style("opacity", 0); }
