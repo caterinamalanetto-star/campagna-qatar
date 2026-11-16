@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le voci sotto i video – Radar QN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap">
+<link rel="stylesheet" href="../assets/radar.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="../assets/radar.js"></script>
+<style>
+  .chat { display: flex; flex-direction: column; gap: 12px; margin: 22px 0 6px; }
+  .msg { display: flex; gap: 10px; align-items: flex-end; max-width: 86%; transition: transform 420ms cubic-bezier(.2,.8,.3,1.3), opacity 300ms ease; }
+  .msg.pre { opacity: 0; transform: translateY(14px) scale(0.96); }
+  .msg.r { align-self: flex-end; flex-direction: row-reverse; text-align: right; }
+  .msg .av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; flex: none; background: var(--grey-5); }
+  .msg .bub { padding: 10px 13px; border-radius: 16px; font-size: 15px; line-height: 1.35; }
+  .msg.favorevole .bub { background: color-mix(in srgb, var(--red) 15%, transparent); border-bottom-left-radius: 4px; }
+  .msg.contrario .bub { background: color-mix(in srgb, var(--grey) 18%, transparent); border-bottom-right-radius: 4px; }
+  .msg.neutro .bub { background: color-mix(in srgb, var(--blue) 12%, transparent); border-bottom-left-radius: 4px; }
+  .msg .bub small { display: block; font-size: 11.5px; color: var(--ink-2); margin-top: 4px; }
+  .keys { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--ink-2); margin-top: 10px; }
+  .keys i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .sec { font-size: 14px; font-weight: 600; margin: 34px 0 2px; }
+  .sec-sub { font-size: 13px; color: var(--ink-2); margin: 0 0 10px; }
+  .lab-c { font-weight: 700; fill: var(--ink); pointer-events: none; }
+  .lab-n { font-weight: 700; pointer-events: none; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<main class="radar">
+  <header>
+    <h1 class="r-title">Le voci sotto i video</h1>
+    <p class="r-sub">Che cosa scrive chi commenta gli annunci della campagna su YouTube: 2.560 commenti classificati dai ricercatori. Frasi tipo, parafrasate dal rapporto</p>
+  </header>
+
+  <div class="chat" id="chat"></div>
+  <div class="keys"><span><i style="background:color-mix(in srgb, var(--red) 40%, transparent)"></i>approva il messaggio</span><span><i style="background:color-mix(in srgb, var(--grey) 45%, transparent)"></i>lo respinge</span><span><i style="background:color-mix(in srgb, var(--blue) 35%, transparent)"></i>commenta la pubblicità in sé</span></div>
+
+  <p class="sec">Contro chi si rivolgono i commenti</p>
+  <p class="sec-sub">Numero di commenti per tema; uno stesso commento può rientrare in più temi</p>
+  <figure class="r-chart" id="pack" style="margin-top:6px"></figure>
+  <div class="keys" id="tkey" style="margin-top:4px"></div>
+  <p class="r-note">In rosso l'ostilità verso i bersagli dell'annuncio, in blu quella rivolta contro Israele e gli ebrei. Una propaganda contro i musulmani finisce così per alimentare anche l'antisemitismo: circa un quinto di chi respinge l'annuncio lo fa con ostilità verso Israele o gli ebrei. La classificazione è una lettura di un agente di intelligenza artificiale, indicativa.</p>
+
+  <footer class="r-foot">
+    <span>Fonte: M. O. Jones e S. Dsouza, <i>Manufacturing the “Great Replacement”</i> (2026)</span>
+    <span>Elaborazione Radar – QN</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var R = Radar, fmt = R.fmt;
+  var AV = { favorevole: "😠", contrario: "🙄", neutro: "🤔" };
+  var COL = { bersaglio: "var(--red)", israele: "var(--blue)", altro: "var(--grey-3)", difesa: "var(--grey-4)" };
+  Promise.all([R.loadCSV("../data/commenti-voci.csv"), R.loadCSV("../data/commenti-temi.csv")]).then(function (res) {
+    var msgs = d3.select("#chat").selectAll("div").data(res[0]).join("div")
+      .attr("class", function (d, i) { return "msg " + d["Chi"] + (d["Chi"] === "contrario" ? " r" : "") + (R.reduced ? "" : " pre"); });
+    msgs.append("span").attr("class", "av").attr("aria-hidden", "true").text(function (d) { return AV[d["Chi"]]; });
+    msgs.append("div").attr("class", "bub").html(function (d) { return "«" + d["Frase"] + "»<small>" + d["Dato"] + "</small>"; });
+    msgs.each(function (d, i) { var el = this; R.onFirstView(el, function () { setTimeout(function () { el.classList.remove("pre"); }, 120); }); });
+
+    var themes = res[1].map(function (r) { return { k: r["Tema"], v: R.num(r["Commenti"]), side: r["Lato"], ex: r["Esempio"] }; });
+    d3.select("#tkey").selectAll("span").data(themes).join("span")
+      .html(function (d) { return '<i style="background:' + COL[d.side] + '"></i><b style="color:var(--ink)">' + d.v + "</b> " + d.k.toLowerCase(); });
+    var host = document.getElementById("pack");
+    var tip = R.tooltip(host);
+    R.dismissOutside(host, function () { tip.hide(); });
+    R.responsive(host, function (W, phase) {
+      var narrow = R.isNarrow(W);
+      var H = narrow ? W * 1.05 : 440;
+      var root = d3.hierarchy({ children: themes }).sum(function (d) { return d.v; }).sort(function (a, b) { return b.value - a.value; });
+      d3.pack().size([W, H]).padding(narrow ? 4 : 6)(root);
+      d3.select(host).select("svg").remove();
+      var svg = d3.select(host).insert("svg", ".r-tip").attr("width", W).attr("height", H).attr("role", "img")
+        .attr("aria-label", "Bolle per tema dei commenti: " + themes.map(function (d) { return d.k + " " + d.v; }).join(", ") + ".");
+      svg.append("title").text("Temi dei commenti sotto i video della campagna");
+      var nodes = svg.selectAll("g").data(root.leaves()).join("g").attr("class", "mark").attr("transform", function (d) { return "translate(" + d.x + "," + d.y + ")"; });
+      var circ = nodes.append("circle").style("fill", function (d) { return COL[d.data.side]; }).style("fill-opacity", 0.9);
+      R.enter(circ, phase, function (s) { s.attr("r", 0); }, function (s) { s.delay(function (d, i) { return phase === "play" ? i * 90 : 0; }).attr("r", function (d) { return d.r; }); });
+      nodes.each(function (d) {
+        var g = d3.select(this), big = d.r > (narrow ? 38 : 48);
+        g.append("text").attr("class", "lab-n").attr("text-anchor", "middle").attr("dy", big ? "-0.2em" : "0.35em")
+          .style("font-size", (big ? Math.min(28, d.r * 0.42) : Math.max(11, d.r * 0.5)) + "px").style("fill", "#fff").text(d.data.v);
+        if (big) {
+          var t = g.append("text").attr("class", "lab-c").attr("text-anchor", "middle").attr("y", 8).style("font-size", "12px").style("fill", "#fff").text(d.data.k);
+          R.wrap(t, d.r * 1.6, 1.2);
+        }
+      });
+      nodes.style("cursor", "pointer").on("pointerenter pointerdown", function (ev, d) {
+        nodes.classed("is-dimmed", function (q) { return q !== d; });
+        tip.show(R.tipHTML({ title: d.data.k, value: fmt(d.data.v, 0), unit: "commenti", note: d.data.ex }), d.x, d.y - d.r);
+      }).on("pointerleave", function (ev) { if (ev.pointerType === "mouse") { tip.hide(); nodes.classed("is-dimmed", false); } });
+    });
+  }).catch(function (e) { R.fail("#chat", e); });
+})();
+</script>
+</body>
+</html>

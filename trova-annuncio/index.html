@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trova l'annuncio – Radar QN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap">
+<link rel="stylesheet" href="../assets/radar.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="../assets/radar.js"></script>
+<style>
+  .how { display: flex; gap: 10px; align-items: center; font-size: 14px; margin: 18px 0 16px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--blue) 8%, transparent); }
+  .how b { font-size: 22px; }
+  .feed { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 639px) { .feed { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
+  .post { position: relative; border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; background: var(--tip-bg); cursor: pointer; transition: transform 160ms ease, box-shadow 160ms ease; }
+  .post:hover { transform: translateY(-2px); }
+  .post .hd { display: flex; align-items: center; gap: 6px; padding: 7px 8px; font-size: 11px; color: var(--ink-2); }
+  .post .hd i { width: 18px; height: 18px; border-radius: 50%; background: var(--grey-5); display: inline-block; }
+  .post .img { aspect-ratio: 9 / 13; background: #000 center / cover no-repeat; }
+  .post .fake { aspect-ratio: 9 / 13; display: grid; place-content: center; text-align: center; padding: 12px; gap: 6px; color: #fff; }
+  .post .fake .e { font-size: 46px; line-height: 1; }
+  .post .fake b { font-family: var(--serif); font-size: 19px; line-height: 1.1; }
+  .post .fake span { font-size: 12px; line-height: 1.35; opacity: 0.9; }
+  .post .flag { position: absolute; right: 8px; bottom: 8px; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 17px;
+    background: rgba(255,255,255,0.92); box-shadow: 0 1px 4px rgba(0,0,0,0.25); opacity: 0.55; transition: transform 200ms cubic-bezier(.2,.8,.3,1.6), opacity 160ms; }
+  .post.flagged .flag { opacity: 1; transform: scale(1.15); background: var(--red); }
+  .post.flagged { box-shadow: 0 0 0 3px var(--red); }
+  .post .verdict { position: absolute; inset: auto 0 0 0; padding: 8px; font-size: 11.5px; line-height: 1.35; color: #fff; transform: translateY(100%); transition: transform 360ms ease; }
+  .post.shown .verdict { transform: none; }
+  .post.shown .flag { display: none; }
+  .post.ok-ad .verdict { background: rgba(209,69,47,0.95); }
+  .post.ok-fake .verdict { background: rgba(31,79,209,0.92); }
+  .post .verdict b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+  .bar span { font-size: 14px; color: var(--ink-2); }
+  .btn { font: 700 15px var(--sans); color: var(--bg); background: var(--ink); border: 0; border-radius: 999px; padding: 11px 24px; cursor: pointer; }
+  .btn:disabled { opacity: 0.35; cursor: default; }
+  .score { margin-top: 18px; border-top: 3px solid var(--red); padding-top: 12px; display: none; }
+  .score.on { display: block; animation: fi 380ms ease both; }
+  .score h2 { font-family: var(--serif); font-size: 26px; margin: 0 0 6px; color: var(--title); }
+  .score p { margin: 0 0 6px; font-size: 15px; line-height: 1.5; }
+  @keyframes fi { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<main class="radar">
+  <header>
+    <h1 class="r-title">Trova l'annuncio</h1>
+    <p class="r-sub">Un feed simulato: sei immagini sono annunci veri della campagna anti-Qatar, sei sono post inventati da noi. Riesci a riconoscere la propaganda?</p>
+  </header>
+
+  <div class="how"><b aria-hidden="true">🚩</b><span>Tocca i post che secondo te sono propaganda, poi premi <b style="font-size:14px">Verifica</b>.</span></div>
+
+  <div class="feed" id="feed"></div>
+  <div class="bar"><span id="count">0 segnalati</span><button class="btn" id="check" disabled>Verifica</button></div>
+
+  <div class="score" id="score" aria-live="polite">
+    <h2 id="s-title"></h2>
+    <p id="s-text"></p>
+    <p class="r-note" style="margin-top:4px">Gli annunci veri si travestivano da festival, videogioco, manuale di volo, cartolina turistica. È il metodo della campagna: confezioni leggere, facili da condividere, per un messaggio sempre uguale.</p>
+    <button class="btn" id="again" style="margin-top:10px">Rigioca</button>
+  </div>
+
+  <footer class="r-foot">
+    <span>Annunci: campagna anti-Qatar, documentata da M. O. Jones e S. Dsouza (2026). Gli altri post sono inventati</span>
+    <span>Elaborazione Radar – QN</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var R = Radar;
+  var GRAD = ["linear-gradient(160deg,#5b2a86,#d1452f)", "linear-gradient(160deg,#0f7a5c,#7dd3a8)", "linear-gradient(160deg,#1f4fd1,#76b7f7)",
+    "linear-gradient(160deg,#8a5a12,#f2c14e)", "linear-gradient(160deg,#333536,#8a8e91)", "linear-gradient(160deg,#a21014,#ff7f7b)"];
+  R.loadCSV("../data/trova.csv").then(function (rows) {
+    var items = rows.map(function (r, i) { return { ad: r["Tipo"] === "annuncio", img: r["Immagine"], e: r["Emoji"], t: r["Titolo"], s: r["Sotto"], x: r["Spiegazione"], i: i }; });
+    var g = 0; items.forEach(function (d) { if (!d.ad) d.grad = GRAD[g++ % GRAD.length]; });
+    var shown = false;
+
+    function shuffle(a) { // ordine casuale a ogni partita
+      a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a;
+    }
+    function build() {
+      shown = false;
+      d3.select("#score").classed("on", false);
+      var posts = d3.select("#feed").selectAll("article").data(shuffle(items), function (d) { return d.i; }).join("article")
+        .attr("class", "post").attr("role", "button").attr("tabindex", 0).attr("aria-pressed", "false").order();
+      posts.html(function (d) {
+        var body = d.ad
+          ? '<div class="img" role="img" aria-label="Post sponsorizzato con immagine" style="background-image:url(../' + d.img + ')"></div>'
+          : '<div class="fake" style="background:' + d.grad + '"><span class="e" aria-hidden="true">' + d.e + "</span><b>" + d.t + "</b><span>" + d.s + "</span></div>";
+        return '<div class="hd"><i></i>Sponsorizzato</div>' + body + '<span class="flag" aria-hidden="true">🚩</span>' +
+          '<div class="verdict"><b>' + (d.ad ? "Annuncio della campagna" : "Post inventato") + "</b>" + d.x + "</div>";
+      });
+      posts.on("click", function () { toggle(this); })
+        .on("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(this); } });
+      count();
+      R.scheduleHeight();
+    }
+    function toggle(el) {
+      if (shown) return;
+      el.classList.toggle("flagged");
+      el.setAttribute("aria-pressed", el.classList.contains("flagged"));
+      count();
+    }
+    function count() {
+      var n = document.querySelectorAll(".post.flagged").length;
+      d3.select("#count").text(n + (n === 1 ? " segnalato" : " segnalati"));
+      d3.select("#check").property("disabled", n === 0 || shown);
+    }
+    d3.select("#check").on("click", function () {
+      shown = true;
+      var hit = 0, miss = 0, wrong = 0;
+      d3.selectAll(".post").each(function (d, i) {
+        var f = this.classList.contains("flagged"), el = this;
+        if (d.ad && f) hit++; else if (d.ad) miss++; else if (f) wrong++;
+        setTimeout(function () { el.classList.add("shown", d.ad ? "ok-ad" : "ok-fake"); }, R.reduced ? 0 : i * 90);
+      });
+      var total = items.filter(function (d) { return d.ad; }).length;
+      var t = hit === total && wrong === 0 ? "🎯 Tutti scoperti!" : hit >= total - 1 ? "👏 Quasi perfetto" : hit >= total / 2 ? "🔎 Buon occhio, ma qualcuno è sfuggito" : "😮 La propaganda si mimetizza bene";
+      d3.select("#s-title").text(t);
+      d3.select("#s-text").text("Hai riconosciuto " + hit + (hit === 1 ? " annuncio" : " annunci") + " su " + total + (miss ? ", te ne sono sfuggiti " + miss : "") + (wrong ? " e hai segnalato " + wrong + (wrong === 1 ? " post innocuo" : " post innocui") : "") + ".");
+      d3.select("#score").classed("on", true);
+      d3.select("#check").property("disabled", true);
+      R.scheduleHeight();
+    });
+    d3.select("#again").on("click", function () { d3.select("#feed").selectAll("article").remove(); build(); });
+    build();
+  }).catch(function (e) { R.fail("#feed", e); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Un centesimo per ogni schermo – Radar QN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap">
+<link rel="stylesheet" href="../assets/radar.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="../assets/radar.js"></script>
+<style>
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; margin: 18px 0 6px; }
+  .seg button {
+    font: 600 13px var(--sans); color: var(--ink-2); background: transparent;
+    border: 1px solid var(--rule); border-radius: 999px; padding: 7px 13px; cursor: pointer;
+  }
+  .seg button:hover { border-color: var(--ink-2); color: var(--ink); }
+  .seg button.on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  .res { display: flex; flex-wrap: wrap; align-items: last baseline; gap: 4px 12px; margin: 20px 0 6px; }
+  .res .n { font-size: 44px; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--red); line-height: 1; }
+  .res .l { font-size: 14px; color: var(--ink-2); max-width: 380px; line-height: 1.35; }
+  .unit { font-size: 12px; color: var(--ink-2); margin: 14px 0 8px; }
+  .phones { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+  @media (max-width: 519px) { .phones { grid-template-columns: repeat(10, 1fr); } }
+  .phones i { font-style: normal; aspect-ratio: 1; display: grid; place-items: center; font-size: clamp(13px, 2.6vw, 20px);
+    opacity: 0.12; filter: grayscale(1); transition: opacity 200ms ease, filter 200ms ease, transform 260ms cubic-bezier(.2,.8,.3,1.5); }
+  .phones i.on { opacity: 1; filter: none; transform: scale(1); }
+  .phones i.off { transform: scale(0.85); }
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 26px; }
+  @media (max-width: 559px) { .facts { grid-template-columns: 1fr; } }
+  .fact { border-top: 3px solid var(--rule); padding-top: 8px; }
+  .fact b { display: block; font-size: 22px; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .fact span { font-size: 13px; color: var(--ink-2); line-height: 1.4; display: block; margin-top: 2px; }
+  .fact .e { font-size: 22px; }
+</style>
+</head>
+<body>
+<main class="radar">
+  <header>
+    <h1 class="r-title">Un centesimo per ogni schermo</h1>
+    <p class="r-sub">Quanta propaganda si comprava con una certa cifra, al costo medio della campagna anti-Qatar. Scegli un importo</p>
+  </header>
+
+  <div class="r-big" aria-hidden="true">
+    <span class="r-big__num" id="cpe">&nbsp;</span>
+    <span class="r-big__label" id="cpe-l"></span>
+  </div>
+
+  <div class="seg" id="seg" role="tablist" aria-label="Importo"></div>
+  <div class="res" aria-live="polite"><span class="n" id="n"></span><span class="l" id="l"></span></div>
+  <p class="unit" id="unit"></p>
+  <div class="phones" id="phones" aria-hidden="true"></div>
+
+  <div class="facts" id="facts"></div>
+  <p class="r-note">Esposizioni: visualizzazioni, utenti raggiunti e impressioni registrati dalle piattaforme, in unità miste e non persone: chi vede più annunci è contato più volte. La spesa è stimata dai ricercatori al prezzo del tracciatore commerciale (6,09 dollari ogni mille impressioni) e a 2 centesimi per visualizzazione su YouTube.</p>
+
+  <footer class="r-foot">
+    <span>Fonte: M. O. Jones e S. Dsouza, <i>Manufacturing the “Great Replacement”</i> (2026)</span>
+    <span>Elaborazione Radar – QN</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var R = Radar, fmt = R.fmt;
+  R.loadCSV("../data/costo.csv").then(function (rows) {
+    var V = {}; rows.forEach(function (r) { V[r["Voce"]] = R.num(r["Valore"]); });
+    var spend = V["Spesa registrata (dollari)"], expo = V["Esposizioni registrate"];
+    var cpe = spend / expo; // dollari per esposizione
+    var perDollar = 1 / cpe;
+    var opts = [
+      { k: "1 dollaro", v: 1 }, { k: "10 dollari", v: 10 }, { k: "100 dollari", v: 100 }, { k: "1.000 dollari", v: 1000 },
+      { k: "Fase 1 su Meta", v: V["Spesa Meta fase 1 (dollari)"] }, { k: "Tutta la campagna", v: spend }
+    ];
+    var cur = 1;
+    var bigEl = d3.select("#cpe"), fC = function (x) { return fmt(x * 100, 2) + " cent"; };
+    d3.select("#cpe-l").text("di dollaro, in media, per ogni esposizione: " + fmt(spend / 1e6, 2) + " milioni di dollari per " + fmt(expo / 1e6, 0) + " milioni di esposizioni");
+    if (R.reduced) bigEl.text(fC(cpe)); else { bigEl.text(fC(0)); R.onFirstView(document.querySelector(".r-big"), function () { R.countUp(bigEl, cpe, fC, "play"); }); }
+
+    var N = 200;
+    var cells = d3.select("#phones").selectAll("i").data(d3.range(N)).join("i").text("📱");
+    var seg = d3.select("#seg").selectAll("button").data(opts).join("button").attr("role", "tab").text(function (d) { return d.k; })
+      .on("click", function (ev, d) { cur = opts.indexOf(d); update(true); });
+
+    function nice(x) { // unità di misura per i telefonini: 1, 10, 100…
+      var u = 1; while (x / u > N) u *= 10; return u;
+    }
+    function fmtBig(x) {
+      if (x >= 1e6) return fmt(x / 1e6, x >= 1e8 ? 0 : 1) + " milioni";
+      return fmt(x, 0);
+    }
+    function update(animate) {
+      var o = opts[cur], ex = o.v * perDollar, u = nice(ex), lit = Math.max(1, Math.round(ex / u));
+      seg.classed("on", function (d, i) { return i === cur; }).attr("aria-selected", function (d, i) { return i === cur; });
+      var nEl = d3.select("#n");
+      if (animate && !R.reduced) R.countUp(nEl, ex, fmtBig, "play"); else nEl.text(fmtBig(ex));
+      d3.select("#l").text("esposizioni comprate con " + (o.v >= 1e6 ? fmt(o.v / 1e6, 2) + " milioni di dollari" : fmt(o.v, 0) + (o.v === 1 ? " dollaro" : " dollari")) +
+        (o.k === "Fase 1 su Meta" ? ", la spesa dichiarata da Meta per la prima fase" : o.k === "Tutta la campagna" ? ", la spesa registrata in tre anni" : ""));
+      d3.select("#unit").html("Ogni 📱 = " + (u === 1 ? "un'esposizione" : fmtBig(u) + " esposizioni") + (lit > N ? "" : ""));
+      cells.each(function (i) {
+        var el = this, on = i < lit;
+        if (el.classList.contains("on") === on) return;
+        var delay = animate && !R.reduced ? (on ? i : (N - i)) * 4 : 0;
+        setTimeout(function () { el.classList.toggle("on", on); el.classList.toggle("off", !on); }, delay);
+      });
+    }
+    update(false);
+
+    var facts = [
+      ["▶️", fmt(V["Prezzo di una visualizzazione YouTube (dollari)"] * 100, 0) + " centesimi", "per una visualizzazione su YouTube, la piattaforma che ha reso di più nella terza fase"],
+      ["📲", fmt(V["Costo per mille impressioni Facebook, tracker (dollari)"], 2) + " dollari", "ogni mille impressioni su Facebook, secondo il tracciatore commerciale"],
+      ["🏆", V["Volte la spesa di Doppelgänger"] + " volte", "la spesa della russa Doppelgänger: la prima fase è l'operazione più costosa mai dichiarata da Meta contro l'Ue"]
+    ];
+    d3.select("#facts").selectAll("div").data(facts).join("div").attr("class", "fact")
+      .html(function (d) { return '<span class="e" aria-hidden="true">' + d[0] + "</span><b>" + d[1] + "</b><span>" + d[2] + "</span>"; });
+    R.scheduleHeight();
+  }).catch(function (e) { R.fail("#phones", e); });
+})();
+</script>
+</body>
+</html>

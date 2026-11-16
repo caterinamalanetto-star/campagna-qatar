@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La campagna in otto tappe – Radar QN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap">
+<link rel="stylesheet" href="../assets/radar.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="../assets/radar.js"></script>
+<style>
+  .bars { display: flex; gap: 4px; margin: 18px 0 14px; }
+  .bars i { flex: 1; height: 4px; border-radius: 2px; background: var(--rule); overflow: hidden; cursor: pointer; }
+  .bars i b { display: block; height: 100%; width: 0; background: var(--ink); transition: width 300ms ease; }
+  .bars i.done b { width: 100%; }
+  .step { min-height: 128px; }
+  .step .k { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red); }
+  .step h2 { font-family: var(--serif); font-size: 26px; line-height: 1.12; margin: 6px 0 6px; color: var(--title); }
+  .step p { font-size: 15px; line-height: 1.5; margin: 0; }
+  .step { transition: opacity 260ms ease; }
+  .step.fade { opacity: 0; }
+  .stage { position: relative; cursor: pointer; margin-top: 10px; }
+  .stage svg { display: block; overflow: visible; }
+  .lbl { font-size: 13px; font-weight: 700; fill: var(--ink); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; }
+  .lbl-s { font-size: 12px; fill: var(--ink-2); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; }
+  .nav { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+  .nav button { font: 600 13px var(--sans); color: var(--ink); background: transparent; border: 1px solid var(--rule); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+  .nav button.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .nav button:disabled { opacity: 0.35; cursor: default; }
+  .nav span { font-size: 12px; color: var(--ink-2); }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.12; } }
+  .blink { animation: blink 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { r: var(--r0); } 50% { r: calc(var(--r0) * 1.35); } }
+  @media (prefers-reduced-motion: reduce) { .blink { animation: none; } }
+</style>
+</head>
+<body>
+<main class="radar">
+  <header>
+    <h1 class="r-title">La campagna in otto tappe</h1>
+    <p class="r-sub">Cento pallini per raccontare la propaganda anti-Qatar, dalla prima inserzione alle elezioni del 2027. Tocca il grafico o usa le frecce</p>
+  </header>
+
+  <div class="bars" id="bars"></div>
+  <div class="step" id="step" aria-live="polite"><span class="k" id="k"></span><h2 id="h"></h2><p id="p"></p></div>
+  <div class="stage" id="stage"></div>
+  <div class="nav"><button id="prev">← Indietro</button><span id="pos"></span><button id="next" class="primary">Avanti →</button></div>
+
+  <footer class="r-foot">
+    <span>Fonte: M. O. Jones e S. Dsouza, <i>Manufacturing the “Great Replacement”</i> (2026)</span>
+    <span>Elaborazione Radar – QN</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var R = Radar, fmt = R.fmt;
+  R.loadCSV("../data/storia-numeri.csv").then(function (rows) {
+    var N = {}; rows.forEach(function (r) { N[r["Voce"]] = R.num(r["Valore"]); });
+    var round = Math.round;
+    // quote su 100 pallini, calcolate dai dati del rapporto
+    var eu = round(N["Europa (milioni)"] / N["Esposizioni con Paese di destinazione (milioni)"] * 100);
+    var na = round(N["Nord America (milioni)"] / N["Esposizioni con Paese di destinazione (milioni)"] * 100);
+    var tot = N["Esposizioni registrate (milioni)"];
+    var p1 = round(N["Fase 1 (milioni)"] / tot * 100), p2 = Math.max(1, round(N["Fase 2 (milioni)"] / tot * 100)), p3 = 100 - p1 - p2;
+    var it = round(N["Italia fase 3 (milioni)"] / tot * 100), fr = round(N["Francia fase 3 (milioni)"] / tot * 100);
+    var yt = round(N["YouTube Italia (milioni)"] / tot * 100);
+    var wd = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"];
+    var rend = wd.map(function (d) { return N["Render " + d]; });
+    var rendTot = d3.sum(rend);
+
+    var STEPS = [
+      { k: "Ottobre 2023 – ottobre 2026", h: "533 milioni di esposizioni", p: "Annunci razzisti e anti-musulmani in 30 Paesi. Ogni pallino è l'1% delle esposizioni registrate dalle piattaforme." },
+      { k: "Dove", h: "Tre su quattro arrivano in Europa", p: "Il " + eu + "% delle esposizioni con un Paese di destinazione è europeo; il " + na + "% va in Nord America, quasi tutto nella prima fase." },
+      { k: "Quando", h: "Tre fasi, due grandi ondate", p: "La prima soprattutto su Facebook, una breve parentesi rivolta all'Ungheria, poi il ritorno su YouTube e TikTok da ottobre 2025." },
+      { k: "Italia", h: "Da zero a 76 milioni", p: "Nessun annuncio rivolto agli italiani prima di ottobre 2025. Nell'ultima fase l'Italia ne riceve " + fmt(N["Italia fase 3 (milioni)"], 1) + " milioni: dopo la Francia, è il Paese più colpito." },
+      { k: "Il motore", h: "Metà la fa YouTube", p: "Solo 36 video su YouTube portano " + fmt(N["YouTube Italia (milioni)"], 1) + " milioni di visualizzazioni in Italia, circa metà del totale." },
+      { k: "Usa e getta", h: "Una pagina vive tre giorni", p: "La pagina tipica fa pubblicità per tre giorni e sparisce. Meta chiude la rete nel 2024, YouTube quattro canali nel 2026: la campagna riparte ogni volta." },
+      { k: "Indizi", h: "Si lavora da domenica a giovedì", p: "I " + rendTot + " video recuperati dal canale Telegram sono stati esportati tutti tra domenica e giovedì, tranne uno riciclato. Un calendario che porta in Israele: indizi, non prove." },
+      { k: "Che cosa ci aspetta", h: "Nel 2027 votano Italia e Francia", p: "La rete è ancora attiva. Il rischio, avvertono i ricercatori, è un'azione a lento rilascio che sposta il clima politico molto prima dell'apertura dei seggi." }
+    ];
+    var cur = 0;
+    var bars = d3.select("#bars").selectAll("i").data(STEPS).join("i").attr("title", function (d) { return d.h; })
+      .on("click", function (ev, d) { go(STEPS.indexOf(d)); });
+    bars.append("b");
+
+    var host = document.getElementById("stage");
+    var dots, labels, W = 0, H = 0, svg;
+
+    function grid(i, cols, x0, y0, w) { var s = w / cols; return [x0 + (i % cols) * s + s / 2, y0 + Math.floor(i / cols) * s + s / 2]; }
+    function layout(step) {
+      var narrow = W < 520, out = [], lab = [], cols = narrow ? 10 : 20;
+      var gw = narrow ? W : Math.min(W, 640), gx = (W - gw) / 2, gy = 30;
+      var r = gw / cols * 0.36;
+      var base = function (i) { return grid(i, cols, gx, gy, gw); };
+      var colr = function () { return "var(--grey-4)"; };
+      if (step === 0) { for (var i = 0; i < 100; i++) out.push({ p: base(i), c: "var(--blue)", o: 1 }); }
+      if (step === 1) {
+        for (i = 0; i < 100; i++) out.push({ p: base(i), c: i < eu ? "var(--blue)" : i < eu + na ? "var(--grey-3)" : "var(--grey-5)", o: 1 });
+        lab.push({ x: gx, y: gy - 12, t: "Europa " + eu + "%", c: "var(--blue)", a: "start" }, { x: gx + gw, y: gy - 12, t: "Nord America " + na + "% · altri " + (100 - eu - na) + "%", a: "end", c: "var(--grey-2)" });
+      }
+      if (step >= 2 && step <= 4) {
+        // tre gruppi per fase
+        var gc = narrow ? 5 : 7, s = narrow ? Math.min(18, W / 3.4 / gc) : 30;
+        var cx = narrow ? [W * 0.2, W * 0.5, W * 0.8] : [W * 0.2, W * 0.5, W * 0.8];
+        var counts = [p1, p2, p3], k = 0;
+        counts.forEach(function (n, f) {
+          for (var j = 0; j < n; j++, k++) {
+            var rows = Math.ceil(n / gc), x = cx[f] - (Math.min(n, gc) * s) / 2 + (j % gc) * s + s / 2, y = gy + 20 + Math.floor(j / gc) * s + s / 2;
+            var c = f === 0 ? "var(--blue-3)" : f === 1 ? "var(--grey-3)" : "var(--blue-2)";
+            if (step >= 3 && f === 2 && j < it) c = "var(--red)";
+            var o = 1;
+            if (step === 4) { o = (f === 2 && j < it) ? (j < yt ? 1 : 0.35) : 0.18; }
+            out.push({ p: [x, y], c: c, o: o, rr: s * 0.36 });
+          }
+        });
+        lab.push({ x: cx[0], y: gy, t: "Fase 1", s: (narrow ? "" : "ott 2023 – lug 2024 · ") + p1 + "%" },
+                 { x: cx[1], y: gy, t: "Fase 2", s: (narrow ? "" : "nov – dic 2024 · ") + p2 + "%" },
+                 { x: cx[2], y: gy, t: "Fase 3", s: (narrow ? "" : "ott 2025 – ott 2026 · ") + p3 + "%" });
+        if (step === 3) lab.push({ x: cx[2], y: gy + 20 + Math.ceil(p3 / gc) * s + 22, t: "Italia: " + it + " pallini", c: "var(--red)" },
+                                 { x: cx[0], y: gy + 20 + Math.ceil(p1 / gc) * s + 22, t: "Italia: zero", c: "var(--red)" });
+        if (step === 4) lab.push({ x: cx[2], y: gy + 20 + Math.ceil(p3 / gc) * s + 22, t: "▶️ YouTube: " + yt + " su " + it, c: "var(--red)" });
+      }
+      if (step === 5) { for (i = 0; i < 100; i++) out.push({ p: base(i), c: "var(--blue)", o: 1, blink: true }); }
+      if (step === 6) {
+        // colonne per giorno della settimana
+        var cw = Math.min(W / 7, 90), per = narrow ? 2 : 3, s2 = Math.min(cw / (per + 0.6), 16), k2 = 0;
+        rend.forEach(function (n, d) {
+          for (var j = 0; j < n; j++, k2++) {
+            var x = (W - cw * 7) / 2 + d * cw + cw / 2 + ((j % per) - (per - 1) / 2) * s2, y = gy + 260 - Math.floor(j / per) * s2;
+            out.push({ p: [x, y], c: d >= 5 ? "var(--red)" : "var(--blue)", o: 1, rr: s2 * 0.4 });
+          }
+        });
+        for (; k2 < 100; k2++) out.push({ p: [W / 2, gy + 300], c: "var(--grey-5)", o: 0 });
+        wd.forEach(function (d, i) { lab.push({ x: (W - cw * 7) / 2 + i * cw + cw / 2, y: gy + 290, t: narrow ? d.slice(0, 3) : d, s: String(rend[i]), c: i >= 5 ? "var(--red)" : null }); });
+        lab.push({ x: (W + cw * 7) / 2 - 2, y: gy + 332, t: narrow ? "Weekend in Israele" : "Fine settimana in Israele", c: "var(--red)", a: "end" });
+      }
+      if (step === 7) {
+        var cx2 = [W * 0.3, W * 0.7], counts2 = [it, fr], k3 = 0, gc2 = 6, s3 = narrow ? 18 : 24;
+        counts2.forEach(function (n, f) {
+          for (var j = 0; j < n; j++, k3++) out.push({ p: [cx2[f] - gc2 * s3 / 2 + (j % gc2) * s3 + s3 / 2, gy + 40 + Math.floor(j / gc2) * s3], c: f === 0 ? "var(--red)" : "var(--blue)", o: 1, rr: s3 * 0.38, pulse: true });
+        });
+        for (; k3 < 100; k3++) out.push({ p: [W / 2, gy + 120], c: "var(--grey-5)", o: 0 });
+        lab.push({ x: cx2[0], y: gy + 10, t: "Italia", s: fmt(N["Italia fase 3 (milioni)"], 1) + (narrow ? " mln" : " milioni nella fase 3"), c: "var(--red)" }, { x: cx2[1], y: gy + 10, t: "Francia", s: fmt(N["Francia fase 3 (milioni)"], 1) + (narrow ? " mln" : " milioni nella fase 3"), c: "var(--blue)" });
+        lab.push({ x: W / 2, y: gy + 230, t: "🗳️ 2027", c: null });
+      }
+      return { dots: out.map(function (d) { d.r = d.rr || r; return d; }), labels: lab };
+    }
+
+    function draw(animate) {
+      var L = layout(cur);
+      var d = R.reduced || !animate ? 0 : 850;
+      dots.data(L.dots).classed("blink", false).transition().duration(d).ease(d3.easeCubicInOut)
+        .delay(function (q, i) { return d ? (i % 20) * 8 : 0; })
+        .attr("cx", function (q) { return q.p[0]; }).attr("cy", function (q) { return q.p[1]; }).attr("r", function (q) { return q.r; })
+        .style("fill", function (q) { return q.c; }).style("opacity", function (q) { return q.o; })
+        .on("end", function (q) { if (q.blink) { this.classList.add("blink"); this.style.animationDelay = (Math.random() * 1.6).toFixed(2) + "s"; } });
+      svg.select(".labs").remove();
+      var lg = svg.append("g").attr("class", "labs").style("opacity", 0);
+      L.labels.forEach(function (l) {
+        var t = lg.append("text").attr("class", "lbl").attr("x", l.x).attr("y", l.y).attr("text-anchor", l.a || "middle").style("fill", l.c || null).text(l.t);
+        if (l.s) lg.append("text").attr("class", "lbl-s").attr("x", l.x).attr("y", l.y + 16).attr("text-anchor", l.a || "middle").text(l.s);
+      });
+      lg.transition().delay(d * 0.6).duration(300).style("opacity", 1);
+      svg.attr("aria-label", STEPS[cur].h + ". " + STEPS[cur].p);
+    }
+
+    function go(i, animate) {
+      cur = Math.max(0, Math.min(STEPS.length - 1, i));
+      var s = STEPS[cur], el = document.getElementById("step");
+      el.classList.add("fade");
+      setTimeout(function () {
+        d3.select("#k").text(s.k); d3.select("#h").text(s.h); d3.select("#p").text(s.p);
+        el.classList.remove("fade"); R.scheduleHeight();
+      }, animate === false ? 0 : 200);
+      bars.classed("done", function (q, j) { return j <= cur; });
+      d3.select("#pos").text((cur + 1) + " di " + STEPS.length);
+      d3.select("#prev").property("disabled", cur === 0);
+      d3.select("#next").text(cur === STEPS.length - 1 ? "↻ Dall'inizio" : "Avanti →");
+      if (svg) draw(animate !== false);
+    }
+    d3.select("#prev").on("click", function () { go(cur - 1); });
+    d3.select("#next").on("click", function () { go(cur === STEPS.length - 1 ? 0 : cur + 1); });
+    host.addEventListener("click", function (ev) {
+      var r = host.getBoundingClientRect();
+      if (ev.clientX - r.left < r.width * 0.3) go(cur - 1); else go(cur === STEPS.length - 1 ? 0 : cur + 1);
+    });
+    document.addEventListener("keydown", function (ev) { if (ev.key === "ArrowRight") go(cur + 1); if (ev.key === "ArrowLeft") go(cur - 1); });
+
+    R.responsive(host, function (w, phase) {
+      W = w; H = w < 520 ? 380 : 360;
+      d3.select(host).select("svg").remove();
+      svg = d3.select(host).append("svg").attr("width", W).attr("height", H).attr("role", "img");
+      dots = svg.append("g").selectAll("circle").data(d3.range(100)).join("circle").attr("cx", W / 2).attr("cy", H / 2).attr("r", 0);
+      draw(phase === "play");
+    });
+    go(0, false);
+  }).catch(function (e) { R.fail("#stage", e); });
+})();
+</script>
+</body>
+</html>

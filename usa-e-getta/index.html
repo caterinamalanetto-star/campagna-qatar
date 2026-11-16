@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Identità usa e getta – Radar QN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap">
+<link rel="stylesheet" href="../assets/radar.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="../assets/radar.js"></script>
+<style>
+  .sec { font-size: 14px; font-weight: 600; margin: 30px 0 4px; }
+  .sec-sub { font-size: 13px; color: var(--ink-2); margin: 0 0 12px; }
+  .bins { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 559px) { .bins { grid-template-columns: repeat(2, 1fr); } }
+  .bin .sq { display: flex; flex-wrap: wrap; gap: 3px; min-height: 44px; align-content: flex-end; }
+  .bin .sq i { width: 13px; height: 13px; border-radius: 3px; display: block; transition: transform 300ms cubic-bezier(.2,.8,.3,1.5), opacity 300ms ease; }
+  .bin .sq i.pre { transform: scale(0); opacity: 0; }
+  .bin b { display: block; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  .bin span { font-size: 13px; color: var(--ink-2); line-height: 1.35; display: block; }
+  .long { list-style: none; padding: 0; margin: 16px 0 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 20px; }
+  @media (max-width: 519px) { .long { grid-template-columns: 1fr; } }
+  .long li { display: flex; justify-content: space-between; font-size: 13px; border-top: 1px solid var(--rule); padding: 5px 0; }
+  .long b { font-variant-numeric: tabular-nums; }
+  .ads { display: flex; height: 34px; border-radius: 3px; overflow: hidden; margin: 6px 0 6px; }
+  .ads div { display: flex; align-items: center; padding: 0 8px; font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; }
+  @media (max-width: 519px) { .ads .x { display: none; } }
+  @media (min-width: 520px) { #ads-key2 { display: none; } }
+  .ads-key { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-2); }
+  .mole { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px; }
+  @media (max-width: 559px) { .mole { grid-template-columns: repeat(2, 1fr); } }
+  .ch { position: relative; border: 1px solid var(--rule); border-radius: 12px; padding: 14px 12px; min-height: 92px; background: var(--tip-bg); overflow: hidden; }
+  .ch .icon { font-size: 26px; }
+  .ch .nm { font-weight: 700; font-size: 15px; margin-top: 4px; }
+  .ch .h { font-size: 12px; color: var(--ink-2); font-family: ui-monospace, Menlo, monospace; }
+  .stamp { position: absolute; right: 10px; top: 14px; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: var(--red); border: 2px solid var(--red);
+    border-radius: 4px; padding: 3px 7px; transform: rotate(-8deg) scale(2.2); opacity: 0; transition: transform 260ms cubic-bezier(.3,1.6,.5,1), opacity 160ms ease; }
+  .ch.closed .stamp { opacity: 1; transform: rotate(-8deg) scale(1); }
+  .ch.closed > .icon, .ch.closed > .nm, .ch.closed > .h { opacity: 0.3; }
+  .ch .back { position: absolute; inset: 0; background: var(--tip-bg); padding: 14px 12px; transform: translateY(100%); transition: transform 420ms cubic-bezier(.2,.8,.3,1.2); border-top: 3px solid var(--blue); }
+  .ch.back-on .back { transform: none; }
+  .ch .back .tag { font-size: 11px; font-weight: 700; color: var(--blue); letter-spacing: 0.06em; text-transform: uppercase; }
+  .clock { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 14px 0 0; font-size: 14px; }
+  @media (max-width: 519px) { .clock .r-note { flex: 1 1 100%; order: 3; } }
+  .clock b { font-size: 20px; font-variant-numeric: tabular-nums; min-width: 9ch; }
+  .replay { font: 600 13px var(--sans); color: var(--ink); background: transparent; border: 1px solid var(--rule); border-radius: 999px; padding: 6px 14px; cursor: pointer; margin-left: auto; }
+  .tl { list-style: none; padding: 0; margin: 18px 0 0; }
+  .tl li { display: grid; grid-template-columns: 34px 120px 1fr; gap: 10px; align-items: baseline; padding: 7px 0; border-top: 1px solid var(--rule); font-size: 14px; }
+  .tl li .d { font-size: 12px; font-weight: 700; color: var(--red); text-transform: uppercase; letter-spacing: 0.04em; }
+  @media (max-width: 519px) { .tl li { grid-template-columns: 28px 1fr; } .tl li .t { grid-column: 2; } }
+</style>
+</head>
+<body>
+<main class="radar">
+  <header>
+    <h1 class="r-title"><span>Identità usa e getta:</span><span>chiudi una pagina, ne spunta un'altra</span></h1>
+    <p class="r-sub">Quanto vivevano le pagine e i canali della campagna anti-Qatar, e come sono sopravvissuti alle chiusure delle piattaforme</p>
+  </header>
+
+  <div class="r-big" aria-hidden="true">
+    <span class="r-big__num" id="big">&nbsp;</span>
+    <span class="r-big__label">la vita mediana di una pagina Facebook della rete, dal primo all'ultimo annuncio</span>
+  </div>
+
+  <p class="sec">Quanto è durata ciascuna delle 61 pagine</p>
+  <p class="sec-sub">Ogni quadratino è una pagina Facebook con annunci datati</p>
+  <div class="bins" id="bins"></div>
+  <ul class="long" id="long"></ul>
+
+  <p class="sec">E quanto durava un singolo annuncio</p>
+  <p class="sec-sub">1.038 annunci Facebook con data di inizio e di fine</p>
+  <div class="ads" id="ads" role="img" aria-label="Il 41% degli annunci è durato un giorno o meno, un altro 36% due o tre giorni, il 23% di più"></div>
+  <div class="r-key" id="ads-key2" style="margin:0 0 6px"></div>
+  <div class="ads-key"><span>Mediana: 2 giorni</span><span>Il più lungo: 29 giorni</span></div>
+
+  <p class="sec">Ottobre 2026: YouTube chiude, la rete riapre</p>
+  <p class="sec-sub">Tre dei quattro canali chiusi tornano online con lo stesso nome e gli stessi inserzionisti brasiliani</p>
+  <div class="mole" id="mole"></div>
+  <div class="clock"><span aria-hidden="true">⏱️</span><b id="clock">Ottobre</b><span id="clock-t" class="r-note" style="margin:0"></span><button class="replay" id="replay">↻ Rivedi</button></div>
+
+  <ol class="tl" id="tl"></ol>
+
+  <footer class="r-foot">
+    <span>Fonte: M. O. Jones e S. Dsouza, <i>Manufacturing the “Great Replacement”</i> (2026)</span>
+    <span>Elaborazione Radar – QN</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var R = Radar, fmt = R.fmt;
+  var COL = ["var(--red)", "var(--grey-2)", "var(--grey-3)", "var(--blue)"];
+  var LAB = ["pagine vissute tutte in una settimana", "da una settimana a un mese", "da uno a tre mesi", "tre mesi o più, il nucleo della rete"];
+  Promise.all([R.loadCSV("../data/identita.csv"), R.loadCSV("../data/identita-longeve.csv")]).then(function (res) {
+    var bins = res[0].map(function (r, i) { return { k: r["Fascia"], n: R.num(r["Identità"]), c: COL[i], l: LAB[i] }; });
+    var tot = d3.sum(bins, function (d) { return d.n; });
+    var big = d3.select("#big"), fD = function (v) { return fmt(v, 0) + " giorni"; };
+    if (R.reduced) big.text(fD(3)); else { big.text(fD(0)); R.onFirstView(document.querySelector(".r-big"), function () { R.countUp(big, 3, fD, "play"); }); }
+
+    var b = d3.select("#bins").selectAll("div").data(bins).join("div").attr("class", "bin");
+    b.append("div").attr("class", "sq").selectAll("i").data(function (d) { return d3.range(d.n).map(function () { return d; }); }).join("i")
+      .attr("class", R.reduced ? null : "pre").style("background", function (d) { return d.c; });
+    b.append("b").text(function (d) { return d.n; });
+    b.append("span").text(function (d) { return d.k.toLowerCase() === "tutto in una settimana" ? "pagine vissute tutte in una settimana (" + R.pct(d.n / tot, 0) + ")" : d.l; });
+    R.onFirstView(document.getElementById("bins"), function () {
+      d3.selectAll("#bins i").each(function (d, i) { var el = this; setTimeout(function () { el.classList.remove("pre"); }, i * 22); });
+    });
+    d3.select("#long").selectAll("li").data(res[1]).join("li")
+      .html(function (r) { return "<span>" + r["Identità"] + "</span><b>" + fmt(R.num(r["Giorni"]), 0) + " giorni</b>"; });
+
+    // durata degli annunci (dal rapporto: 41% entro un giorno, 77% entro tre)
+    var ads = [{ k: "Un giorno o meno", v: 41, c: "var(--red)" }, { k: "2-3 giorni", v: 36, c: "var(--red-4)" }, { k: "Di più", v: 23, c: "var(--grey-4)" }];
+    d3.select("#ads").selectAll("div").data(ads).join("div").style("background", function (d) { return d.c; })
+      .style("width", function (d) { return d.v + "%"; }).style("color", function (d, i) { return i === 2 ? "var(--on-light)" : "#fff"; })
+      .html(function (d) { return "<b>" + d.v + "%</b><span class='x'>&nbsp;· " + d.k.toLowerCase() + "</span>"; });
+    d3.select("#ads-key2").html(ads.map(function (d) { return '<span><i class="sw" style="background:' + d.c + '"></i>' + d.k + "</span>"; }).join(""));
+
+    // acchiappa-la-talpa con i canali YouTube
+    var chans = [
+      { icon: "🎮", a: "Grand Theft Qatar", b: "@GrandTheftQatar2" },
+      { icon: "🎪", a: "EURO Summer Fest", b: "@EuroSummerFest-z" },
+      { icon: "🎯", a: "Qatar is Responsible", b: "@QatarIsResponsibl3" },
+      { icon: "🚨", a: "AirAlert", b: null }
+    ];
+    var ch = d3.select("#mole").selectAll("div").data(chans).join("div").attr("class", "ch");
+    ch.append("div").attr("class", "icon").attr("aria-hidden", "true").text(function (d) { return d.icon; });
+    ch.append("div").attr("class", "nm").text(function (d) { return d.a; });
+    ch.append("div").attr("class", "h").text("canale YouTube");
+    ch.append("span").attr("class", "stamp").text("CHIUSO");
+    var back = ch.filter(function (d) { return d.b; }).append("div").attr("class", "back");
+    back.append("div").attr("class", "tag").text("Di nuovo online");
+    back.append("div").attr("class", "nm").text(function (d) { return d.a; });
+    back.append("div").attr("class", "h").text(function (d) { return d.b; });
+    var timers = [];
+    function play() {
+      timers.forEach(clearTimeout); timers = [];
+      ch.classed("closed", false).classed("back-on", false);
+      d3.select("#clock").text("Ottobre 2026"); d3.select("#clock-t").text("YouTube chiude i canali per violazione dei termini di servizio");
+      var t = R.reduced ? 0 : 500;
+      ch.each(function (d, i) { var el = this; timers.push(setTimeout(function () { el.classList.add("closed"); }, t + i * 350)); });
+      timers.push(setTimeout(function () {
+        d3.select("#clock").text("26 ottobre"); d3.select("#clock-t").text("pochi giorni dopo: otto nuovi video, stesse descrizioni");
+        ch.filter(function (d) { return d.b; }).each(function (d, i) { var el = this; timers.push(setTimeout(function () { el.classList.add("back-on"); }, i * 380)); });
+      }, R.reduced ? 0 : t + 2200));
+    }
+    d3.select("#replay").on("click", play);
+    R.onFirstView(document.getElementById("mole"), play);
+
+    var tl = [
+      ["🚫", "Metà maggio 2024", "Meta rimuove la rete della prima fase: 65 pagine, 112 account Facebook, 49 Instagram"],
+      ["🔁", "Novembre 2024", "Gli annunci ripartono con nuove pagine: «Orban is right», «Newrope», «They are here»"],
+      ["📈", "Ottobre 2025", "Ritorno in grande scala, ora soprattutto su YouTube e TikTok"],
+      ["♻️", "Ottobre 2026", "YouTube chiude quattro canali: tre rinascono in pochi giorni"]
+    ];
+    d3.select("#tl").selectAll("li").data(tl).join("li")
+      .html(function (d) { return '<span aria-hidden="true">' + d[0] + '</span><span class="d">' + d[1] + '</span><span class="t">' + d[2] + "</span>"; });
+    R.scheduleHeight();
+  }).catch(function (e) { R.fail("#bins", e); });
+})();
+</script>
+</body>
+</html>

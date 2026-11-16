@@ -1,9 +1,9 @@
 Paese;ISO;Lon;Lat;Fase 1;Fase 2;Fase 3
-Regno Unito;GBR;-1,8;53,2;128,2;0,6;25,3
+Regno Unito;GBR;-1,8;53,2;128,2;0,578;25,3
 Francia;FRA;2,4;46,7;28,8;1,6;90,1
 Italia;ITA;12,6;42,6;0;0;76,2
-Germania;DEU;10,4;51,1;0,6;0;33,7
+Germania;DEU;10,4;51,1;0,587;0;33,7
 Libano;LBN;35,9;33,9;0;0;15,2
-Ungheria;HUN;19,4;47,2;0;1,0;0
+Ungheria;HUN;19,4;47,2;0,0237;1,03;0
 Stati Uniti;USA;;;98,7;0;1,0
 Altri Paesi;;;;10,5;1,5;7,0
