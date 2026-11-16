@@ -49,7 +49,7 @@
 <main class="radar">
   <header>
     <h1 class="r-title">Trova l'annuncio</h1>
-    <p class="r-sub">Un feed simulato: sei immagini sono annunci veri della campagna anti-Qatar, sei sono post inventati da noi. Riesci a riconoscere la propaganda?</p>
+    <p class="r-sub">Un feed simulato: sei immagini sono annunci veri della campagna anti-Qatar, sei sono post inventati da noi con lo stesso stile. Riesci a riconoscere la propaganda?</p>
   </header>
 
   <div class="how"><b aria-hidden="true">🚩</b><span>Tocca i post che secondo te sono propaganda, poi premi <b style="font-size:14px">Verifica</b>.</span></div>
@@ -60,7 +60,7 @@
   <div class="score" id="score" aria-live="polite">
     <h2 id="s-title"></h2>
     <p id="s-text"></p>
-    <p class="r-note" style="margin-top:4px">Gli annunci veri si travestivano da festival, videogioco, manuale di volo, cartolina turistica. È il metodo della campagna: confezioni leggere, facili da condividere, per un messaggio sempre uguale.</p>
+    <p class="r-note" style="margin-top:4px">Gli annunci veri si travestivano da festival, videogioco, manuale di volo, cartolina turistica, video di cronaca: le stesse confezioni dei post qui accanto. È il metodo della campagna: confezioni leggere, facili da condividere, per un messaggio sempre uguale.</p>
     <button class="btn" id="again" style="margin-top:10px">Rigioca</button>
   </div>
 
@@ -73,11 +73,8 @@
 <script>
 (function () {
   var R = Radar;
-  var GRAD = ["linear-gradient(160deg,#5b2a86,#d1452f)", "linear-gradient(160deg,#0f7a5c,#7dd3a8)", "linear-gradient(160deg,#1f4fd1,#76b7f7)",
-    "linear-gradient(160deg,#8a5a12,#f2c14e)", "linear-gradient(160deg,#333536,#8a8e91)", "linear-gradient(160deg,#a21014,#ff7f7b)"];
   R.loadCSV("../data/trova.csv").then(function (rows) {
-    var items = rows.map(function (r, i) { return { ad: r["Tipo"] === "annuncio", img: r["Immagine"], e: r["Emoji"], t: r["Titolo"], s: r["Sotto"], x: r["Spiegazione"], i: i }; });
-    var g = 0; items.forEach(function (d) { if (!d.ad) d.grad = GRAD[g++ % GRAD.length]; });
+    var items = rows.map(function (r, i) { return { ad: r["Tipo"] === "annuncio", img: r["Immagine"], x: r["Spiegazione"], i: i }; });
     var shown = false;
 
     function shuffle(a) { // ordine casuale a ogni partita
@@ -89,9 +86,8 @@
       var posts = d3.select("#feed").selectAll("article").data(shuffle(items), function (d) { return d.i; }).join("article")
         .attr("class", "post").attr("role", "button").attr("tabindex", 0).attr("aria-pressed", "false").order();
       posts.html(function (d) {
-        var body = d.ad
-          ? '<div class="img" role="img" aria-label="Post sponsorizzato con immagine" style="background-image:url(../' + d.img + ')"></div>'
-          : '<div class="fake" style="background:' + d.grad + '"><span class="e" aria-hidden="true">' + d.e + "</span><b>" + d.t + "</b><span>" + d.s + "</span></div>";
+        // stessa presentazione per annunci veri e post inventati: si distinguono solo guardando
+        var body = '<div class="img" role="img" aria-label="Post sponsorizzato con immagine" style="background-image:url(../' + d.img + ')"></div>';
         return '<div class="hd"><i></i>Sponsorizzato</div>' + body + '<span class="flag" aria-hidden="true">🚩</span>' +
           '<div class="verdict"><b>' + (d.ad ? "Annuncio della campagna" : "Post inventato") + "</b>" + d.x + "</div>";
       });

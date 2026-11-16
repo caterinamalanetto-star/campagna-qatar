@@ -1,13 +1,13 @@
-Tipo;Immagine;Emoji;Titolo;Sotto;Spiegazione
-annuncio;video/euro-summer-fest.jpg;;;;Finto spot di festival: «Qatar Productions presenta». Al posto dei concerti, scontri e cortei.
-inventato;;🎆;Notte bianca in centro;Musica e mercatini fino all'alba, ingresso libero;Post inventato da Radar per il gioco.
-annuncio;video/grand-theft-qatar.jpg;;;;Parodia di un videogioco, generata con l'IA: «Missione compiuta: islamizzazione dell'Europa».
-inventato;;🕹️;Pixel Farm è arrivato;Il gioco della fattoria ora anche sul telefono;Post inventato da Radar per il gioco.
-annuncio;video/piloti.jpg;;;;Un fumetto che sembra un manuale di sicurezza in volo, ma invita a «controllare» i piloti musulmani.
-inventato;;✈️;Offerte d'autunno;Voli per le capitali europee da 29 euro;Post inventato da Radar per il gioco.
-annuncio;video/paesi/HUN.jpg;;;;Una cartolina da una piazza ungherese, con lo slogan su Orbán e le recinzioni. Fase 2, novembre-dicembre 2024.
-inventato;;🏛️;Budapest d'inverno;I cinque mercatini più belli da vedere a dicembre;Post inventato da Radar per il gioco.
-annuncio;video/sai-chi-e-dietro.jpg;;;;Immagini di strada a Milano senza data né contesto, con la domanda «Sai chi è dietro».
-inventato;;📊;Sondaggio;Quanti libri leggi in un anno? Rispondi in 10 secondi;Post inventato da Radar per il gioco.
-annuncio;video/paesi/FRA.jpg;;;;Un manifesto in stile cinematografico sui Fratelli musulmani, rivolto al pubblico francese.
-inventato;;🍝;La ricetta del giorno;Carbonara in quindici minuti, senza panna;Post inventato da Radar per il gioco.
+Tipo;Immagine;Spiegazione
+annuncio;video/euro-summer-fest.jpg;Finto spot di festival: «Qatar Productions presenta». Al posto dei concerti, scontri e cortei.
+inventato;video/decoy/d1.jpg;Post inventato da Radar: una festa di piazza, niente di più.
+annuncio;video/grand-theft-qatar.jpg;Parodia di un videogioco, generata con l'IA: «Missione compiuta: islamizzazione dell'Europa».
+inventato;video/decoy/d2.jpg;Post inventato da Radar: la pubblicità di un gioco di corse.
+annuncio;video/piloti.jpg;Un fumetto che sembra un manuale di sicurezza in volo, ma invita a «controllare» i piloti musulmani.
+inventato;video/decoy/d3.jpg;Post inventato da Radar: un benvenuto a bordo, nessun sottotesto.
+annuncio;video/paesi/HUN.jpg;Una cartolina da una piazza ungherese, con lo slogan su Orbán e le recinzioni. Fase 2, novembre-dicembre 2024.
+inventato;video/decoy/d4.jpg;Post inventato da Radar: una cartolina turistica.
+annuncio;video/sai-chi-e-dietro.jpg;Immagini di strada a Milano senza data né contesto, con la domanda «Sai chi è dietro».
+inventato;video/decoy/d5.jpg;Post inventato da Radar: un avviso sul traffico.
+annuncio;video/paesi/FRA.jpg;Un manifesto in stile cinematografico sui Fratelli musulmani, rivolto al pubblico francese.
+inventato;video/decoy/d6.jpg;Post inventato da Radar: un sondaggio sulla lettura.
