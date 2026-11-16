@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>L'Italia, da zero a 76 milioni – Radar QN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap">
+<link rel="stylesheet" href="../assets/radar.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="../assets/radar.js"></script>
+<style>
+  .ring { stroke-width: 2; }
+  .arrow-line { stroke-width: 2.5; stroke-linecap: round; fill: none; }
+  .country { font-size: 14px; font-weight: 500; fill: var(--ink); }
+  .country.is-hi { font-weight: 700; fill: var(--red); }
+</style>
+</head>
+<body>
+<main class="radar">
+  <header>
+    <h1 class="r-title">L'Italia, da zero a 76 milioni</h1>
+    <p class="r-sub">Esposizioni agli annunci della campagna anti-Qatar nella prima e nella terza fase, in milioni, nei Paesi più colpiti</p>
+  </header>
+
+  <div class="r-big" id="big" aria-hidden="true">
+    <span class="r-big__num" id="big-num" style="color:var(--red)">&nbsp;</span>
+    <span class="r-big__label" id="big-label"></span>
+  </div>
+
+  <figure class="r-chart" id="chart">
+    <div class="r-key" style="margin:0 0 8px">
+      <span><i class="sw sw--ring" style="border-color:var(--grey)"></i>Fase 1 · ott 2023-lug 2024</span>
+      <span><i class="sw" style="background:var(--blue);border-radius:50%"></i>Fase 3 · ott 2025-ott 2026</span>
+    </div>
+  </figure>
+  <p class="r-note">La fase 2 (novembre-dicembre 2024, rivolta soprattutto all'Ungheria) vale pochi milioni ed è esclusa. Le esposizioni sono visualizzazioni registrate dalle piattaforme, non persone: chi vede più annunci è contato più volte.</p>
+
+  <footer class="r-foot">
+    <span>Fonte: M. O. Jones e S. Dsouza, <i>Manufacturing the “Great Replacement”</i> (2026)</span>
+    <span>Elaborazione Radar – QN</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var R = Radar, fmt = R.fmt;
+  var f1 = function (v) { return fmt(v, 1); };
+  var K1 = "Fase 1 (ott 2023-lug 2024)", K3 = "Fase 3 (ott 2025-ott 2026)";
+
+  R.loadCSV("../data/esposizioni-fasi.csv").then(function (rows) {
+    var data = rows.map(function (r) { return { k: r["Paese"], a: R.num(r[K1]), b: R.num(r[K3]) }; })
+      .sort(function (p, q) { return q.b - p.b; });
+    var it = data.find(function (d) { return d.k === "Italia"; });
+
+    var bigNum = d3.select("#big-num");
+    var fmtBig = function (v) { return fmt(v, 1) + " mln"; };
+    d3.select("#big-label").text("le esposizioni in Italia nella terza fase. Prima di ottobre 2025 nessun annuncio era rivolto agli italiani");
+    if (R.reduced) bigNum.text(fmtBig(it.b));
+    else { bigNum.text(fmtBig(0)); R.onFirstView(document.getElementById("big"), function () { R.countUp(bigNum, it.b, fmtBig, "play"); }); }
+
+    var host = document.getElementById("chart");
+    var tip = R.tooltip(host), clear = function () {};
+    R.dismissOutside(host, function () { tip.hide(); clear(); });
+
+    R.responsive(host, function (W, phase) {
+      var narrow = R.isNarrow(W);
+      var labW = narrow ? 92 : 120, row = narrow ? 46 : 50;
+      var m = { top: 26, right: narrow ? 40 : 48, bottom: 10, left: labW };
+      var w = W - m.left - m.right, H = m.top + m.bottom + row * data.length;
+      var x = d3.scaleLinear().domain([0, d3.max(data, function (d) { return Math.max(d.a, d.b); })]).nice().range([0, w]);
+      var ticks = x.ticks(narrow ? 3 : 5);
+
+      d3.select(host).select("svg").remove();
+      var svg = d3.select(host).insert("svg", ".r-tip").attr("width", W).attr("height", H).attr("role", "img")
+        .attr("aria-label", "Grafico a manubri: " + data.map(function (d) {
+          return d.k + " passa da " + f1(d.a) + " a " + f1(d.b) + " milioni di esposizioni";
+        }).join("; ") + ".");
+      svg.append("title").text("Esposizioni alla campagna per Paese, prima e terza fase");
+      var g = svg.append("g").attr("transform", "translate(" + m.left + "," + m.top + ")");
+
+      // griglia verticale
+      g.append("g").attr("class", "grid").selectAll("line").data(ticks).join("line")
+        .attr("x1", function (d) { return Math.round(x(d)) + 0.5; }).attr("x2", function (d) { return Math.round(x(d)) + 0.5; })
+        .attr("y1", -6).attr("y2", row * data.length);
+      g.append("g").selectAll("text").data(ticks).join("text").attr("class", "tick-label").attr("text-anchor", "middle")
+        .attr("x", function (d) { return x(d); }).attr("y", -12).text(function (d) { return fmt(d, 0); });
+
+      var cy = function (i) { return i * row + row / 2; };
+      var rowsG = g.append("g").selectAll("g").data(data).join("g").attr("class", "mark")
+        .attr("transform", function (d, i) { return "translate(0," + cy(i) + ")"; });
+
+      // fascia evidenziata per l'Italia
+      rowsG.filter(function (d) { return d === it; }).append("rect")
+        .attr("x", -labW).attr("y", -row / 2 + 3).attr("width", W - m.right + 4).attr("height", row - 6).attr("rx", 3)
+        .style("fill", "var(--red)").style("opacity", 0.07);
+
+      rowsG.append("text").attr("class", function (d) { return "country" + (d === it ? " is-hi" : ""); })
+        .attr("x", -labW).attr("dy", "0.35em").text(function (d) { return d.k; });
+
+      var col = function (d) { return d === it ? "var(--red)" : (d.b >= d.a ? "var(--blue)" : "var(--grey)"); };
+
+      // linea da fase 1 a fase 3
+      var lines = rowsG.append("line").attr("class", "arrow-line").style("stroke", col).style("opacity", 0.45)
+        .attr("y1", 0).attr("y2", 0).attr("x1", function (d) { return x(d.a); });
+      R.enter(lines, phase, function (s) { s.attr("x2", function (d) { return x(d.a); }); },
+        function (s) { s.attr("x2", function (d) { return x(d.b); }); });
+
+      // cerchio vuoto: fase 1
+      rowsG.append("circle").attr("class", "ring").attr("r", 6).attr("cx", function (d) { return x(d.a); })
+        .style("fill", "var(--bg)").style("stroke", "var(--grey)");
+      // cerchio pieno: fase 3
+      var dots = rowsG.append("circle").attr("r", 8).style("fill", col);
+      R.enter(dots, phase, function (s) { s.attr("cx", function (d) { return x(d.a); }); },
+        function (s) { s.attr("cx", function (d) { return x(d.b); }); });
+
+      // valori
+      // se a sinistra non c'è spazio, il valore va sopra il pallino
+      var above = function (d) { return d.b < d.a && x(d.b) < 40; };
+      var vals = rowsG.append("text").attr("class", "val-label").attr("dy", "0.35em")
+        .style("fill", function (d) { return d === it ? "var(--red)" : null; })
+        .attr("text-anchor", function (d) { return above(d) ? "middle" : (d.b >= d.a ? "start" : "end"); })
+        .attr("y", function (d) { return above(d) ? -17 : 0; })
+        .attr("x", function (d) { return above(d) ? x(d.b) : (d.b >= d.a ? x(d.b) + 13 : x(d.b) - 13); });
+      vals.each(function (d) { R.countUp(d3.select(this), d.b, f1, phase); });
+      // valore fase 1 per chi scende
+      rowsG.filter(function (d) { return d.a > d.b; }).append("text").attr("class", "val-label val-label--muted")
+        .attr("dy", "0.35em").attr("x", function (d) { return x(d.a) + 11; }).text(function (d) { return f1(d.a); });
+
+      // annotazione sull'Italia
+      var ii = data.indexOf(it);
+      var an = g.append("g").attr("class", "anno");
+      if (!narrow) an.append("text").attr("x", x(it.b) + 56).attr("y", cy(ii)).attr("dy", "0.35em")
+        .attr("font-weight", 600).text("Da zero, in un anno");
+      R.enter(an, phase, function (s) { s.style("opacity", 0); }, function (s) { s.style("opacity", 1); }, R.DUR * 0.9);
+
+      // interazione
+      clear = function () { rowsG.classed("is-dimmed", false); };
+      g.append("g").selectAll("rect").data(data).join("rect").attr("class", "hit")
+        .attr("x", -labW).attr("width", W).attr("y", function (d, i) { return i * row; }).attr("height", row)
+        .on("pointerenter pointerdown", function (ev, d) {
+          rowsG.classed("is-dimmed", function (q) { return q !== d; });
+          var diff = d.b - d.a;
+          tip.show(R.tipHTML({
+            title: d.k, value: f1(d.b), unit: "milioni nella fase 3",
+            rows: [["Fase 1", f1(d.a) + " mln"], ["Differenza", (diff >= 0 ? "+" : "−") + f1(Math.abs(diff)) + " mln"]],
+            note: d === it ? "Nessun annuncio rivolto all'Italia prima di ottobre 2025" : null
+          }), Math.min(x(Math.max(d.a, d.b)) + m.left, W - 30), cy(data.indexOf(d)) + m.top - 6);
+        })
+        .on("pointerleave", function (ev) { if (ev.pointerType === "mouse") { tip.hide(); clear(); } });
+    });
+  }).catch(function (e) { R.fail("#chart", e); });
+})();
+</script>
+</body>
+</html>

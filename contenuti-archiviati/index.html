@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oltre duemila contenuti, mezzo miliardo di esposizioni – Radar QN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap">
+<link rel="stylesheet" href="../assets/radar.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="../assets/radar.js"></script>
+<style>
+  .grp-n { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; fill: var(--ink); }
+  .grp-l { font-size: 13px; fill: var(--ink-2); }
+</style>
+</head>
+<body>
+<main class="radar">
+  <header>
+    <h1 class="r-title">Duemila contenuti, mezzo miliardo di esposizioni</h1>
+    <p class="r-sub">Contenuti della campagna archiviati dai ricercatori tra ottobre 2023 e ottobre 2026, per piattaforma. Ogni quadratino vale dieci contenuti</p>
+  </header>
+
+  <div class="r-big" id="big" aria-hidden="true">
+    <span class="r-big__num" id="big-num">&nbsp;</span>
+    <span class="r-big__label" id="big-label"></span>
+  </div>
+
+  <figure class="r-chart" id="chart" style="margin-top:20px">
+  </figure>
+  <p class="r-note" id="note"></p>
+
+  <footer class="r-foot">
+    <span>Fonte: M. O. Jones e S. Dsouza, <i>Manufacturing the “Great Replacement”</i> (2026)</span>
+    <span>Elaborazione Radar – QN</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var R = Radar, fmt = R.fmt;
+  var COL = ["var(--blue-2)", "var(--blue-3)", "var(--blue-3)", "var(--blue-4)"];
+
+  Promise.all([R.loadCSV("../data/contenuti.csv"), R.loadCSV("../data/esposizioni-totali.csv")]).then(function (res) {
+    var rows = res[0];
+    var EXPO = R.num(res[1][0]["Esposizioni (milioni)"]), EXPO_EST = R.num(res[1][1]["Esposizioni (milioni)"]);
+    var groups = rows.map(function (r, i) {
+      return { p: r["Piattaforma"], t: r["Tipo"], n: R.num(r["Contenuti"]), c: COL[i] };
+    });
+    var tot = d3.sum(groups, function (d) { return d.n; });
+    var UNIT = 10; // contenuti per quadratino
+    groups.forEach(function (gr) { gr.sq = Math.round(gr.n / UNIT); });
+
+    var bigNum = d3.select("#big-num"), fB = function (v) { return fmt(v, 0) + " mln"; };
+    d3.select("#big-label").text("di esposizioni in tre anni, " + fmt(tot, 0) + " contenuti in 30 Paesi");
+    if (R.reduced) bigNum.text(fB(EXPO));
+    else { bigNum.text(fB(0)); R.onFirstView(document.getElementById("big"), function () { R.countUp(bigNum, EXPO, fB, "play"); }); }
+    d3.select("#note").text("Stimando anche ciò che gli archivi non hanno catturato, le esposizioni salgono a " + fmt(EXPO_EST, 0) +
+      " milioni. I quadratini sono arrotondati alla decina. Esposizioni: visualizzazioni e contatti registrati dalle piattaforme, non persone.");
+
+    var host = document.getElementById("chart");
+    var tip = R.tooltip(host), clear = function () {};
+    R.dismissOutside(host, function () { tip.hide(); clear(); });
+
+    R.responsive(host, function (W, phase) {
+      var narrow = R.isNarrow(W);
+      var cols = narrow ? 24 : 50;
+      var size = W / cols, gap = Math.max(2, size * 0.2);
+      var headH = 32, after = 22, y = 0;
+      groups.forEach(function (gr) {
+        gr.y = y; gr.rows = Math.ceil(gr.sq / cols);
+        y += headH + gr.rows * size + after;
+      });
+      var H = y - after + 4;
+
+      d3.select(host).select("svg").remove();
+      var svg = d3.select(host).insert("svg", ".r-tip").attr("width", W).attr("height", H).attr("role", "img")
+        .attr("aria-label", "Grafico a quadratini: " + fmt(tot, 0) + " contenuti archiviati. " + groups.map(function (d) {
+          return fmt(d.n, 0) + " " + d.t.toLowerCase() + " su " + d.p;
+        }).join(", ") + ".");
+      svg.append("title").text("Contenuti della campagna per piattaforma");
+
+      var gg = svg.selectAll("g.grp").data(groups).join("g").attr("class", "grp mark")
+        .attr("transform", function (d) { return "translate(0," + d.y + ")"; });
+      var lab = gg.append("text").attr("y", 20);
+      lab.append("tspan").attr("class", "grp-n").each(function (d) { R.countUp(d3.select(this), d.n, function (v) { return fmt(v, 0); }, phase); });
+      lab.append("tspan").attr("class", "grp-l").attr("dx", 8).text(function (d) { return d.t.toLowerCase() + " su " + d.p; });
+
+      gg.each(function (gr, gi) {
+        var cells = d3.range(gr.sq);
+        var rects = d3.select(this).append("g").attr("transform", "translate(0," + headH + ")")
+          .selectAll("rect").data(cells).join("rect")
+          .attr("x", function (i) { return (i % cols) * size; })
+          .attr("y", function (i) { return Math.floor(i / cols) * size; })
+          .attr("rx", 2).style("fill", gr.c);
+        R.enter(rects, phase,
+          function (s) { s.attr("width", 0).attr("height", 0); },
+          function (s) {
+            s.delay(function (i) { return phase === "play" ? gi * 150 + i * 3 : 0; })
+              .attr("width", size - gap).attr("height", size - gap);
+          });
+      });
+
+      clear = function () { gg.classed("is-dimmed", false); };
+      svg.selectAll("rect.hit").data(groups).join("rect").attr("class", "hit")
+        .attr("x", 0).attr("width", W).attr("y", function (d) { return d.y; })
+        .attr("height", function (d) { return headH + d.rows * size; })
+        .on("pointerenter pointerdown", function (ev, d) {
+          gg.classed("is-dimmed", function (q) { return q !== d; });
+          tip.show(R.tipHTML({ title: d.p + " · " + d.t.toLowerCase(), value: fmt(d.n, 0), unit: "contenuti",
+            rows: [["Quota sul totale", R.pct(d.n / tot, 0)]] }), Math.min(W - 40, cols * size / 2), d.y + headH);
+        })
+        .on("pointerleave", function (ev) { if (ev.pointerType === "mouse") { tip.hide(); clear(); } });
+    });
+  }).catch(function (e) { R.fail("#chart", e); });
+})();
+</script>
+</body>
+</html>

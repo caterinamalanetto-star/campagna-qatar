@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gli annunci seguono il calendario elettorale – Radar QN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap">
+<link rel="stylesheet" href="../assets/radar.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="../assets/radar.js"></script>
+<style>
+  .ph-label { font-size: 13px; font-weight: 700; fill: var(--ink); }
+  .pin-label { font-size: 12px; fill: var(--ink); }
+  .pin-label .em { font-weight: 700; }
+  .phases { list-style: none; padding: 0; margin: 18px 0 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 18px; }
+  .phases li { font-size: 13px; line-height: 1.4; color: var(--ink-2); border-top: 3px solid var(--blue-3); padding-top: 6px; }
+  .phases li b { display: block; color: var(--ink); font-size: 13px; }
+  @media (max-width: 519px) { .phases { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main class="radar">
+  <header>
+    <h1 class="r-title"><span>Gli annunci seguono</span><span>il calendario elettorale</span></h1>
+    <p class="r-sub">Le tre fasi della campagna e le scadenze elettorali nei Paesi presi di mira</p>
+  </header>
+
+  <figure class="r-chart" id="chart">
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="6" height="6" style="fill:var(--bg)"></rect>
+          <line x1="0" y1="0" x2="0" y2="6" style="stroke:var(--red);stroke-width:2.5"></line>
+        </pattern>
+      </defs>
+    </svg>
+  </figure>
+  <ul class="phases" id="phases"></ul>
+
+  <footer class="r-foot">
+    <span>Fonte: M. O. Jones e S. Dsouza, <i>Manufacturing the “Great Replacement”</i> (2026)</span>
+    <span>Elaborazione Radar – QN</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var R = Radar, tf = R.timeLocale.format, parse = d3.timeParse("%Y-%m-%d");
+  var fDay = tf("%-d %B %Y"), fMon = tf("%B %Y");
+
+  R.loadCSV("../data/calendario.csv").then(function (rows) {
+    var items = rows.map(function (r) {
+      return { t: r["Tipo"], a: parse(r["Inizio"]), b: r["Fine"] ? parse(r["Fine"]) : null, k: r["Etichetta"], d: r["Dettaglio"] };
+    });
+    var phases = items.filter(function (d) { return d.t === "Fase"; });
+    var votes = items.filter(function (d) { return d.t === "Voto"; });
+    var fut = items.find(function (d) { return d.t === "Futuro"; });
+
+    d3.select("#phases").selectAll("li").data(phases).join("li")
+      .html(function (d) { return "<b>" + d.k + " · " + fMon(d.a) + (d.b ? "-" + fMon(d.b) : "") + "</b>" + d.d; });
+
+    var host = document.getElementById("chart");
+    var tip = R.tooltip(host), clear = function () {};
+    R.dismissOutside(host, function () { tip.hide(); clear(); });
+
+    R.responsive(host, function (W, phase) {
+      var narrow = R.isNarrow(W);
+      var x = d3.scaleTime().domain([phases[0].a, d3.timeDay.offset(fut.b, 1)]).range([0, W]);
+      var bandY = 30, bandH = narrow ? 34 : 40, pinLen = 26;
+      var labY = bandY + bandH + pinLen + 14;
+      var H = labY + (narrow ? 96 : 50) + 26;
+
+      d3.select(host).select("svg.main").remove();
+      var svg = d3.select(host).insert("svg", ".r-tip").attr("class", "main").attr("width", W).attr("height", H).attr("role", "img")
+        .attr("aria-label", "Linea del tempo: " + phases.map(function (d) { return d.k + " da " + fMon(d.a) + " a " + fMon(d.b); }).join(", ") +
+          ". Voti: " + votes.map(function (d) { return d.k + " il " + fDay(d.a); }).join(", ") + ". Nel 2027 votano Italia e Francia.");
+      svg.append("title").text("Le fasi della campagna e le scadenze elettorali");
+      var g = svg.append("g");
+
+      // anni
+      var years = x.ticks(d3.timeYear.every(1)).filter(function (d) { return +d > +x.domain()[0] && +d < +x.domain()[1]; });
+      g.append("g").attr("class", "grid").selectAll("line").data(years).join("line")
+        .attr("x1", function (d) { return Math.round(x(d)) + 0.5; }).attr("x2", function (d) { return Math.round(x(d)) + 0.5; })
+        .attr("y1", bandY - 8).attr("y2", H - 22);
+      g.append("g").selectAll("text").data(years).join("text").attr("class", "tick-label")
+        .attr("x", function (d) { return x(d) + 4; }).attr("y", H - 6).text(function (d) { return d.getFullYear(); });
+
+      // zona futura: 2027
+      var fz = g.append("g").attr("class", "mark");
+      fz.append("rect").attr("x", x(fut.a) + 2).attr("y", bandY).attr("width", x(fut.b) - x(fut.a) - 2).attr("height", bandH).attr("rx", 3)
+        .style("fill", "url(#hatch)").style("opacity", 0.55);
+      var ft = fz.append("text").attr("class", "pin-label").attr("x", x(fut.a) + 6).attr("y", labY - 6);
+      ft.append("tspan").attr("class", "em").style("fill", "var(--red)").text("2027");
+      ft.append("tspan").attr("x", x(fut.a) + 6).attr("dy", 16).text("Italia e Francia");
+      ft.append("tspan").attr("x", x(fut.a) + 6).attr("dy", 16).text("al voto");
+      fz.append("line").attr("x1", x(fut.a) + 6).attr("x2", x(fut.a) + 6).attr("y1", bandY + bandH + 4).attr("y2", labY - 20)
+        .style("stroke", "var(--red)").style("stroke-width", 0.75);
+
+      // fasi
+      var bands = g.append("g").selectAll("rect").data(phases).join("rect").attr("class", "mark")
+        .attr("y", bandY).attr("height", bandH).attr("rx", 3).style("fill", "var(--blue-3)");
+      R.enter(bands, phase,
+        function (s) { s.attr("x", function (d) { return x(d.a); }).attr("width", 0); },
+        function (s) {
+          s.delay(function (d, i) { return phase === "play" ? i * 220 : 0; })
+            .attr("width", function (d) { return Math.max(4, x(d3.timeDay.offset(d.b, 1)) - x(d.a)); });
+        });
+      g.append("g").selectAll("text").data(phases).join("text").attr("class", "ph-label")
+        .attr("x", function (d) { return x(d.a); }).attr("y", bandY - 10).text(function (d) { return d.k; });
+
+      // elezioni: spilli
+      var pins = g.append("g").attr("class", "anno").selectAll("g").data(votes).join("g").attr("class", "mark");
+      pins.append("line").attr("x1", function (d) { return x(d.a); }).attr("x2", function (d) { return x(d.a); })
+        .attr("y1", bandY + bandH / 2).attr("y2", bandY + bandH + pinLen);
+      pins.append("circle").attr("cx", function (d) { return x(d.a); }).attr("cy", bandY + bandH / 2).attr("r", 4)
+        .style("fill", "var(--bg)").style("stroke", "var(--ink)").style("stroke-width", 1.5);
+      pins.each(function (d, i) {
+        var px = x(d.a), last = i === votes.length - 1;
+        var anchor = last ? "end" : (px < 60 ? "start" : "middle");
+        var tx = last ? px + 4 : px;
+        var drop = narrow && i % 2 === 1 ? 44 : 0; // su mobile le etichette si sfalsano
+        d3.select(this).select("line").attr("y2", bandY + bandH + pinLen + drop);
+        var t = d3.select(this).append("text").attr("class", "pin-label").attr("text-anchor", anchor).attr("x", tx).attr("y", labY - 6 + drop);
+        t.append("tspan").attr("class", "em").text(d.k);
+        t.append("tspan").attr("x", tx).attr("dy", 16).text(fDay(d.a));
+      });
+      R.enter(pins, phase, function (s) { s.style("opacity", 0); }, function (s) { s.style("opacity", 1); }, R.DUR * 0.8);
+
+      // interazione
+      var all = phases.concat(votes, [fut]);
+      clear = function () { bands.classed("is-dimmed", false); };
+      g.append("g").selectAll("rect").data(all).join("rect").attr("class", "hit")
+        .attr("x", function (d) { return d.b ? x(d.a) : x(d.a) - 12; })
+        .attr("width", function (d) { return d.b ? Math.max(16, x(d.b) - x(d.a)) : 24; })
+        .attr("y", function (d) { return d.t === "Fase" ? bandY - 24 : bandY; })
+        .attr("height", function (d) { return d.t === "Fase" ? bandH + 24 : H - bandY - 24; })
+        .on("pointerenter pointerdown", function (ev, d) {
+          bands.classed("is-dimmed", function (q) { return d.t === "Fase" && q !== d; });
+          var when = d.t === "Futuro" ? String(d.a.getFullYear()) : (d.b ? fMon(d.a) + " - " + fMon(d.b) : fDay(d.a));
+          tip.show(R.tipHTML({ title: d.k, rows: [["Quando", when]], note: d.d }),
+            d.b ? x(d.a) + Math.min(60, (x(d.b) - x(d.a)) / 2) : x(d.a), bandY);
+        })
+        .on("pointerleave", function (ev) { if (ev.pointerType === "mouse") { tip.hide(); clear(); } });
+    });
+  }).catch(function (e) { R.fail("#chart", e); });
+})();
+</script>
+</body>
+</html>

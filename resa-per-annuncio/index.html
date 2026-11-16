@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>In Italia ogni annuncio arriva più lontano – Radar QN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap">
+<link rel="stylesheet" href="../assets/radar.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="../assets/radar.js"></script>
+<style>
+  .bub-num { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .bub-name { font-size: 14px; font-weight: 600; fill: var(--ink); }
+  .bub-sub { font-size: 12px; fill: var(--ink-2); }
+  .seg-label { font-size: 13px; font-weight: 600; }
+</style>
+</head>
+<body>
+<main class="radar">
+  <header>
+    <h1 class="r-title">In Italia ogni annuncio arriva più lontano</h1>
+    <p class="r-sub">Esposizioni medie per annuncio nella terza fase della campagna (ottobre 2025-ottobre 2026)</p>
+  </header>
+
+  <figure class="r-chart" id="bolle"></figure>
+  <div class="r-big" id="ratio" aria-hidden="true" style="margin-top:14px">
+    <span class="r-big__num" id="ratio-num" style="color:var(--red)">&nbsp;</span>
+    <span class="r-big__label" id="ratio-label"></span>
+  </div>
+
+  <figure class="r-chart" id="yt">
+    <p class="r-chart__head">Il traino di YouTube</p>
+    <p class="r-chart__sub">Esposizioni in Italia nella terza fase, in milioni</p>
+  </figure>
+
+  <footer class="r-foot">
+    <span>Fonte: M. O. Jones e S. Dsouza, <i>Manufacturing the “Great Replacement”</i> (2026)</span>
+    <span>Elaborazione Radar – QN</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var R = Radar, fmt = R.fmt;
+  var fK = function (v) { return fmt(v / 1000, 0) + "mila"; };
+
+  Promise.all([R.loadCSV("../data/resa-annunci.csv"), R.loadCSV("../data/italia-piattaforme.csv")]).then(function (res) {
+    var bub = res[0].map(function (r) { return { k: r["Paese"], v: R.num(r["Esposizioni medie per annuncio"]) }; });
+    var it = bub.find(function (d) { return d.k === "Italia"; }), de = bub.find(function (d) { return d.k === "Germania"; });
+    var ratio = it.v / de.v;
+
+    // ===== Bolle =====
+    var host = document.getElementById("bolle");
+    var rnum = d3.select("#ratio-num"), fR = function (v) { return "×" + fmt(v, 1); };
+    d3.select("#ratio-label").text("ogni annuncio rivolto agli italiani ha prodotto più del doppio delle esposizioni di uno rivolto ai tedeschi, anche se la Germania ha ricevuto più annunci");
+    R.responsive(host, function (W, phase) {
+      var narrow = R.isNarrow(W);
+      var rMax = narrow ? 88 : 116;
+      var r = d3.scaleSqrt().domain([0, it.v]).range([0, rMax]);
+      var gap = narrow ? 18 : 40;
+      var total = r(it.v) * 2 + gap + r(de.v) * 2;
+      var cxIt = (W - total) / 2 + r(it.v), cxDe = cxIt + r(it.v) + gap + r(de.v);
+      var base = rMax * 2 + 4; // le bolle poggiano sulla stessa linea
+      var H = base + 30;
+
+      d3.select(host).select("svg").remove();
+      var svg = d3.select(host).append("svg").attr("width", W).attr("height", H).attr("role", "img")
+        .attr("aria-label", "Ogni annuncio rivolto all'Italia ha prodotto in media circa " + fK(it.v) + " esposizioni, contro " +
+          fK(de.v) + " in Germania: " + fmt(ratio, 1) + " volte tanto.");
+      svg.append("title").text("Esposizioni medie per annuncio, Italia e Germania");
+      var g = svg.append("g");
+      g.append("line").attr("class", "baseline").style("stroke", "var(--rule)")
+        .attr("x1", cxIt - r(it.v) - 10).attr("x2", cxDe + r(de.v) + 10).attr("y1", base + 0.5).attr("y2", base + 0.5);
+
+      [[it, cxIt, "var(--red)", "#fff"], [de, cxDe, "var(--grey-4)", "var(--on-light)"]].forEach(function (o, i) {
+        var d = o[0], cx = o[1], rr = r(d.v);
+        var c = g.append("circle").attr("cx", cx).style("fill", o[2]);
+        R.enter(c, phase, function (s) { s.attr("r", 0).attr("cy", base); },
+          function (s) { s.attr("r", rr).attr("cy", base - rr); });
+        var num = g.append("text").attr("class", "bub-num").attr("text-anchor", "middle").attr("x", cx)
+          .attr("y", base - rr + 2).style("fill", o[3]).style("font-size", i && narrow ? "18px" : null);
+        R.countUp(num, d.v, fK, phase);
+        g.append("text").attr("class", "bub-name").attr("text-anchor", "middle").attr("x", cx)
+          .attr("y", base - rr + 22).style("fill", o[3]).text(d.k);
+        R.enter(g.selectAll("text"), phase, function (s) { s.style("opacity", 0); }, function (s) { s.style("opacity", 1); }, R.DUR * 0.5);
+      });
+      g.append("text").attr("class", "bub-sub").attr("text-anchor", "middle").attr("x", W / 2).attr("y", base + 22)
+        .text("esposizioni medie per annuncio");
+    });
+    if (R.reduced) rnum.text(fR(ratio));
+    else { rnum.text(fR(0)); R.onFirstView(document.getElementById("ratio"), function () { R.countUp(rnum, ratio, fR, "play"); }); }
+
+    // ===== Barra YouTube =====
+    var parts = res[1].map(function (r) { return { k: r["Voce"], v: R.num(r["Esposizioni (milioni)"]) }; });
+    var tot = d3.sum(parts, function (d) { return d.v; });
+    var host2 = document.getElementById("yt");
+    var tip = R.tooltip(host2), clear = function () {};
+    R.dismissOutside(host2, function () { tip.hide(); clear(); });
+    R.responsive(host2, function (W, phase) {
+      var narrow = R.isNarrow(W);
+      var bh = 44, H = bh + 56;
+      var x = d3.scaleLinear().domain([0, tot]).range([0, W]);
+      var GAP = 2, acc = 0;
+      parts.forEach(function (p) { p.x0 = acc; acc += p.v; p.x1 = acc; });
+
+      d3.select(host2).select("svg").remove();
+      var svg = d3.select(host2).insert("svg", ".r-tip").attr("width", W).attr("height", H).attr("role", "img")
+        .attr("aria-label", "Dei " + fmt(tot, 1) + " milioni di esposizioni in Italia, " + fmt(parts[0].v, 1) +
+          " vengono da 36 video su YouTube: " + R.pct(parts[0].v / tot, 0) + ".");
+      svg.append("title").text("Esposizioni in Italia: YouTube e altri annunci");
+      var g = svg.append("g");
+      var segs = g.selectAll("rect").data(parts).join("rect").attr("class", "mark").attr("y", 0).attr("height", bh).attr("rx", 2)
+        .style("fill", function (d, i) { return i ? "var(--grey-5)" : "var(--red)"; });
+      R.enter(segs, phase, function (s) { s.attr("x", 0).attr("width", 0); },
+        function (s) {
+          s.attr("x", function (d, i) { return x(d.x0) + (i ? GAP : 0); })
+            .attr("width", function (d, i) { return Math.max(0, x(d.x1) - x(d.x0) - GAP); });
+        });
+      var lab = g.selectAll("text.seg-label").data(parts).join("text").attr("class", "seg-label")
+        .attr("x", function (d, i) { return i ? W - 10 : 10; }).attr("text-anchor", function (d, i) { return i ? "end" : "start"; })
+        .attr("y", bh / 2).attr("dy", "0.35em").style("fill", function (d, i) { return i ? "var(--ink)" : "#fff"; });
+      lab.each(function (d) { R.countUp(d3.select(this), d.v, function (v) { return fmt(v, 1); }, phase); });
+      g.selectAll("text.cap").data(parts).join("text").attr("class", "tick-label cap")
+        .attr("x", function (d, i) { return i ? W : 0; }).attr("text-anchor", function (d, i) { return i ? "end" : "start"; })
+        .attr("y", bh + 20).style("fill", function (d, i) { return i ? null : "var(--ink)"; })
+        .style("font-weight", function (d, i) { return i ? null : 600; })
+        .text(function (d, i) { return i ? "Tutti gli altri annunci" : (narrow ? "36 video YouTube" : "Solo 36 video su YouTube"); });
+      g.append("text").attr("class", "tick-label").attr("x", 0).attr("y", bh + 38)
+        .text("circa la metà del totale (" + R.pct(parts[0].v / tot, 0) + ")");
+
+      clear = function () { segs.classed("is-dimmed", false); };
+      g.selectAll("rect.hit").data(parts).join("rect").attr("class", "hit")
+        .attr("x", function (d) { return x(d.x0); }).attr("width", function (d) { return x(d.x1) - x(d.x0); }).attr("y", 0).attr("height", bh)
+        .on("pointerenter pointerdown", function (ev, d) {
+          segs.classed("is-dimmed", function (q) { return q !== d; });
+          tip.show(R.tipHTML({ title: d.k, value: fmt(d.v, 1), unit: "milioni", rows: [["Quota sul totale italiano", R.pct(d.v / tot, 0)]],
+            note: d === parts[1] ? "Calcolato: " + fmt(tot, 1) + " milioni totali meno i " + fmt(parts[0].v, 1) + " di YouTube" : null }),
+            x((d.x0 + d.x1) / 2), 0);
+        })
+        .on("pointerleave", function (ev) { if (ev.pointerType === "mouse") { tip.hide(); clear(); } });
+    });
+  }).catch(function (e) { R.fail("#bolle", e); });
+})();
+</script>
+</body>
+</html>

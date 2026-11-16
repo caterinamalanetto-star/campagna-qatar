@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solo in italiano prevale chi approva – Radar QN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap">
+<link rel="stylesheet" href="../assets/radar.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="../assets/radar.js"></script>
+<style>
+  .lang { font-size: 14px; font-weight: 500; fill: var(--ink); }
+  .lang.is-hi { font-weight: 700; fill: var(--red); }
+  .side-head { font-size: 12px; font-weight: 600; letter-spacing: 0.02em; }
+  .net { font-size: 12px; font-weight: 700; }
+</style>
+</head>
+<body>
+<main class="radar">
+  <header>
+    <h1 class="r-title">Solo in italiano prevale chi approva</h1>
+    <p class="r-sub">Posizione dei commenti sotto i video YouTube della campagna, per lingua, in percentuale sui commenti di ogni lingua</p>
+  </header>
+
+  <figure class="r-chart" id="chart"></figure>
+  <p class="r-note">I ricercatori hanno classificato oltre 2.500 commenti. Le due quote non arrivano a 100: gli altri commenti non sono né favorevoli né contrari. Circa un commentatore su sette attribuisce gli annunci a Israele.</p>
+
+  <footer class="r-foot">
+    <span>Fonte: M. O. Jones e S. Dsouza, <i>Manufacturing the “Great Replacement”</i> (2026)</span>
+    <span>Elaborazione Radar – QN</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var R = Radar, fmt = R.fmt;
+  R.loadCSV("../data/commenti-lingua.csv").then(function (rows) {
+    var data = rows.map(function (r) {
+      var f = R.num(r["Favorevoli"]), c = R.num(r["Contrari"]);
+      return { k: r["Lingua del commento"], f: f, c: c, n: f - c };
+    });
+    var it = data.find(function (d) { return d.k === "Italiano"; });
+
+    var host = document.getElementById("chart");
+    var tip = R.tooltip(host), clear = function () {};
+    R.dismissOutside(host, function () { tip.hide(); clear(); });
+
+    R.responsive(host, function (W, phase) {
+      var narrow = R.isNarrow(W);
+      var labW = narrow ? 72 : 100, netW = narrow ? 34 : 56;
+      var row = 40, bh = 24;
+      var m = { top: 30, right: netW, bottom: 6, left: labW };
+      var w = W - m.left - m.right, H = m.top + m.bottom + row * data.length;
+      var max = d3.max(data, function (d) { return Math.max(d.f, d.c); });
+      var half = w / 2;
+      var x = d3.scaleLinear().domain([0, max]).range([0, half - 4]);
+      var cx = half;
+
+      d3.select(host).select("svg").remove();
+      var svg = d3.select(host).insert("svg", ".r-tip").attr("width", W).attr("height", H).attr("role", "img")
+        .attr("aria-label", "Grafico a barre divergenti. " + data.map(function (d) {
+          return d.k + ": favorevoli " + d.f + "%, contrari " + d.c + "%";
+        }).join("; ") + ". Solo in italiano i favorevoli superano i contrari.");
+      svg.append("title").text("Commenti favorevoli e contrari per lingua");
+      var g = svg.append("g").attr("transform", "translate(" + m.left + "," + m.top + ")");
+
+      g.append("text").attr("class", "side-head").attr("x", cx - 6).attr("y", -12).attr("text-anchor", "end")
+        .style("fill", "var(--grey-2)").text("← Contrari");
+      g.append("text").attr("class", "side-head").attr("x", cx + 6).attr("y", -12)
+        .style("fill", "var(--blue)").text("Favorevoli →");
+      if (!narrow) g.append("text").attr("class", "side-head").attr("x", w + netW).attr("y", -12).attr("text-anchor", "end")
+        .style("fill", "var(--ink-2)").text("Saldo");
+
+      var yy = function (i) { return i * row + (row - bh) / 2; };
+      var rowsG = g.append("g").selectAll("g").data(data).join("g").attr("class", "mark")
+        .attr("transform", function (d, i) { return "translate(0," + yy(i) + ")"; });
+
+      rowsG.filter(function (d) { return d === it; }).append("rect")
+        .attr("x", -labW).attr("y", -(row - bh) / 2 + 2).attr("width", W).attr("height", row - 4).attr("rx", 3)
+        .style("fill", "var(--red)").style("opacity", 0.07);
+
+      rowsG.append("text").attr("class", function (d) { return "lang" + (d === it ? " is-hi" : ""); })
+        .attr("x", -labW).attr("y", bh / 2).attr("dy", "0.35em").text(function (d) { return d.k; });
+
+      // barre contrari (verso sinistra) e favorevoli (verso destra)
+      var left = rowsG.append("path").style("fill", "var(--grey-4)");
+      var right = rowsG.append("path").style("fill", function (d) { return d === it ? "var(--red)" : "var(--blue)"; });
+      // barra verso sinistra con angoli smussati sul lato libero
+      function leftPath(d, t) {
+        var x0 = cx - 1, ww = x(d.c) * t, r = Math.min(2, ww, bh / 2), xl = x0 - ww;
+        return "M" + x0 + ",0H" + (xl + r) + "Q" + xl + ",0 " + xl + "," + r + "V" + (bh - r) +
+          "Q" + xl + "," + bh + " " + (xl + r) + "," + bh + "H" + x0 + "Z";
+      }
+      function rightPath(d, t) { return R.barPathH(cx + 1, 0, x(d.f) * t, bh, 2); }
+      R.enter(left, phase, function (s) { s.attr("d", function (d) { return leftPath(d, 0.001); }); },
+        function (s) { s.attrTween("d", function (d) { return function (t) { return leftPath(d, Math.max(t, 0.001)); }; }); });
+      R.enter(right, phase, function (s) { s.attr("d", function (d) { return rightPath(d, 0); }); },
+        function (s) { s.attrTween("d", function (d) { return function (t) { return rightPath(d, t); }; }); });
+
+      // valori dentro le barre
+      var lv = rowsG.append("text").attr("class", "val-label").attr("x", function (d) { return cx - x(d.c) + 7; })
+        .attr("y", bh / 2).attr("dy", "0.35em");
+      lv.each(function (d) { R.countUp(d3.select(this), d.c, function (v) { return fmt(v, 0); }, phase); });
+      var rv = rowsG.append("text").attr("class", "val-label").attr("x", function (d) { return cx + x(d.f) - 7; })
+        .attr("text-anchor", "end").attr("y", bh / 2).attr("dy", "0.35em").style("fill", "#fff");
+      rv.each(function (d) { R.countUp(d3.select(this), d.f, function (v) { return fmt(v, 0); }, phase); });
+
+      // saldo
+      rowsG.append("text").attr("class", "net").attr("x", w + netW).attr("text-anchor", "end").attr("y", bh / 2).attr("dy", "0.35em")
+        .style("fill", function (d) { return d.n > 0 ? "var(--red)" : "var(--ink-2)"; })
+        .text(function (d) { return (d.n > 0 ? "+" : "−") + fmt(Math.abs(d.n), 0); });
+
+      // asse centrale
+      g.append("line").attr("class", "baseline").attr("x1", cx + 0.5).attr("x2", cx + 0.5).attr("y1", -4).attr("y2", row * data.length);
+
+      clear = function () { rowsG.classed("is-dimmed", false); };
+      g.append("g").selectAll("rect").data(data).join("rect").attr("class", "hit")
+        .attr("x", -labW).attr("width", W).attr("y", function (d, i) { return i * row; }).attr("height", row)
+        .on("pointerenter pointerdown", function (ev, d) {
+          rowsG.classed("is-dimmed", function (q) { return q !== d; });
+          tip.show(R.tipHTML({
+            title: "Commenti in " + d.k.toLowerCase(), value: (d.n > 0 ? "+" : "−") + fmt(Math.abs(d.n), 0), unit: "punti di saldo",
+            rows: [["Favorevoli", d.f + "%"], ["Contrari", d.c + "%"]],
+            note: d === it ? "L'unica lingua in cui chi approva supera chi respinge" : null
+          }), cx + m.left + x(d.f), yy(data.indexOf(d)) + m.top);
+        })
+        .on("pointerleave", function (ev) { if (ev.pointerType === "mouse") { tip.hide(); clear(); } });
+    });
+  }).catch(function (e) { R.fail("#chart", e); });
+})();
+</script>
+</body>
+</html>
