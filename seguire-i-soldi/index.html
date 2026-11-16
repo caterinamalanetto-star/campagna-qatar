@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seguire i soldi: il giro del mondo della campagna – Radar QN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap">
+<link rel="stylesheet" href="../assets/radar.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="../assets/radar.js"></script>
+<style>
+  .land { fill: var(--grey-5); stroke: var(--bg); stroke-width: 0.5; }
+  :root[data-theme="dark"] .land { fill: #26282a; }
+  .land.is-on { fill: var(--blue-5); }
+  :root[data-theme="dark"] .land.is-on { fill: #1d3460; }
+  .flow { fill: none; stroke: var(--ink-2); stroke-width: 1.25; stroke-dasharray: 4 4; }
+  .pin { cursor: pointer; }
+  .pin .disc { fill: var(--tip-bg); stroke: var(--rule); stroke-width: 1; transition: stroke 160ms ease; }
+  .pin.is-on .disc { stroke: var(--red); stroke-width: 2.5; }
+  .pin .emo { font-size: 17px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .pin .num { font-size: 10px; font-weight: 700; fill: var(--bg); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .pin .badge { fill: var(--ink); }
+  .pin.is-on .badge { fill: var(--red); }
+  .leader { stroke: var(--ink-2); stroke-width: 0.75; }
+  .spot { fill: var(--ink); }
+  .card {
+    display: grid; grid-template-columns: 56px 1fr; gap: 4px 14px; align-items: start;
+    border-top: 3px solid var(--red); padding: 14px 0 0; margin-top: 14px; min-height: 150px;
+  }
+  .card .big { font-size: 42px; line-height: 1; grid-row: span 3; }
+  .card .where { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--red); }
+  .card h2 { font-family: var(--serif); font-size: 22px; line-height: 1.15; margin: 0; color: var(--title); }
+  .card p { font-size: 15px; line-height: 1.5; margin: 4px 0 0; color: var(--ink); }
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
+  .nav button {
+    font: 600 13px var(--sans); color: var(--ink); background: transparent; border: 1px solid var(--rule);
+    border-radius: 999px; padding: 8px 16px; cursor: pointer;
+  }
+  .nav button:hover { border-color: var(--ink-2); }
+  .nav button:disabled { opacity: 0.35; cursor: default; }
+  .dots { display: flex; gap: 6px; }
+  .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--rule); cursor: pointer; }
+  .dots i.on { background: var(--red); }
+</style>
+</head>
+<body>
+<main class="radar">
+  <header>
+    <h1 class="r-title"><span>Seguire i soldi:</span><span>il giro del mondo della campagna</span></h1>
+    <p class="r-sub">Dove porta la filiera della campagna anti-Qatar secondo il rapporto. Tocca un simbolo o scorri le tappe</p>
+  </header>
+
+  <figure class="r-chart" id="map" style="margin-top:18px"></figure>
+
+  <div class="card" id="card" aria-live="polite">
+    <span class="big" id="c-emo" aria-hidden="true"></span>
+    <span class="where" id="c-where"></span>
+    <h2 id="c-title"></h2>
+    <p id="c-text"></p>
+  </div>
+  <div class="nav">
+    <button id="prev" aria-label="Tappa precedente">← Indietro</button>
+    <div class="dots" id="dots"></div>
+    <button id="next" aria-label="Tappa successiva">Avanti →</button>
+  </div>
+  <p class="r-note">Le linee tratteggiate indicano da dove arrivavano gli account pubblicitari comprati dalla rete. La collocazione degli indizi non dice chi abbia pagato la campagna.</p>
+
+  <footer class="r-foot">
+    <span>Fonte: M. O. Jones e S. Dsouza, <i>Manufacturing the “Great Replacement”</i> (2026); confini Natural Earth</span>
+    <span>Elaborazione Radar – QN</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var R = Radar;
+  var ISO = { "Qatar": "QAT", "Vietnam": "VNM", "San Paolo": "BRA", "New York": "USA", "Germania": "DEU", "Israele": "ISR" };
+
+  Promise.all([R.loadCSV("../data/filiera.csv"), fetch("../data/mondo.geojson").then(function (r) { return r.json(); })]).then(function (res) {
+    var stops = res[0].map(function (r) {
+      return { n: +r["Ordine"], emo: r["Emoji"], title: r["Titolo"], where: r["Luogo"], lon: R.num(r["Lon"]), lat: R.num(r["Lat"]),
+        dx: R.num(r["Dx"]) || 0, dy: R.num(r["Dy"]) || 0, flow: r["Flusso"] === "1", text: r["Testo"] };
+    });
+    var geo = res[1];
+    geo.features.forEach(function (f) {
+      if (d3.geoArea(f) > 2 * Math.PI) f.geometry.coordinates.forEach(function (p) { p.forEach(function (r) { r.reverse(); }); });
+    });
+    var europe = stops[0];
+    var cur = 0;
+    var api = function () {};
+
+    var dots = d3.select("#dots").selectAll("i").data(stops).join("i")
+      .attr("title", function (d) { return d.title; }).on("click", function (ev, d) { go(stops.indexOf(d)); });
+
+    function go(i) {
+      cur = Math.max(0, Math.min(stops.length - 1, i));
+      var s = stops[cur];
+      d3.select("#c-emo").text(s.emo);
+      d3.select("#c-where").text((cur + 1) + "/" + stops.length + (s.where ? " · " + s.where : ""));
+      d3.select("#c-title").text(s.title);
+      d3.select("#c-text").text(s.text);
+      d3.select("#prev").property("disabled", cur === 0);
+      d3.select("#next").property("disabled", cur === stops.length - 1);
+      dots.classed("on", function (d, j) { return j === cur; });
+      api();
+      R.scheduleHeight();
+    }
+    d3.select("#prev").on("click", function () { go(cur - 1); });
+    d3.select("#next").on("click", function () { go(cur + 1); });
+
+    var host = document.getElementById("map");
+    R.responsive(host, function (W, phase) {
+      var narrow = R.isNarrow(W);
+      var H = Math.round(W * (narrow ? 0.72 : 0.56));
+      var proj = d3.geoNaturalEarth1()
+        .fitExtent([[4, 30], [W - 4, H - 6]], { type: "MultiPoint", coordinates: [[-95, 50], [-50, -35], [125, -10], [115, 50], [30, 62]] });
+      var path = d3.geoPath(proj);
+      var k = narrow ? 0.7 : 1; // spostamento dei simboli dal punto reale
+      var pr = narrow ? 13 : 17;
+
+      d3.select(host).select("svg").remove();
+      var svg = d3.select(host).append("svg").attr("width", W).attr("height", H).attr("role", "img")
+        .attr("aria-label", "Mappa del mondo con le tappe della filiera: " + stops.filter(function (s) { return s.where; })
+          .map(function (s) { return s.where + ", " + s.title.toLowerCase(); }).join("; ") + ". Il committente non è stato identificato.");
+      svg.append("title").text("Le tappe della filiera della campagna");
+      svg.append("defs").append("clipPath").attr("id", "clipw").append("rect").attr("width", W).attr("height", H);
+      var land = svg.append("g").attr("clip-path", "url(#clipw)").selectAll("path").data(geo.features).join("path")
+        .attr("class", "land").attr("d", path);
+
+      var placed = stops.filter(function (s) { return s.lon != null; });
+      placed.forEach(function (s) {
+        var p = proj([s.lon, s.lat]); s.x = p[0]; s.y = p[1]; s.px = p[0] + s.dx * k; s.py = p[1] + s.dy * k;
+      });
+
+      // flussi di account verso l'Europa
+      var flows = svg.append("g").selectAll("path").data(placed.filter(function (s) { return s.flow; })).join("path")
+        .attr("class", "flow").attr("d", function (s) {
+          var x0 = s.x, y0 = s.y, x1 = europe.x, y1 = europe.y;
+          var mx = (x0 + x1) / 2, my = Math.min(y0, y1) - Math.abs(x1 - x0) * 0.22;
+          return "M" + x0 + "," + y0 + "Q" + mx + "," + my + " " + x1 + "," + y1;
+        });
+      R.enter(flows, phase,
+        function (s) { s.style("stroke-dashoffset", 0).style("opacity", 0); },
+        function (s) { s.style("opacity", 1); });
+
+      var leaders = svg.append("g");
+      leaders.selectAll("line").data(placed).join("line").attr("class", "leader")
+        .attr("x1", function (s) { return s.x; }).attr("y1", function (s) { return s.y; })
+        .attr("x2", function (s) { return s.px; }).attr("y2", function (s) { return s.py; });
+      leaders.selectAll("circle").data(placed).join("circle").attr("class", "spot").attr("r", 2.2)
+        .attr("cx", function (s) { return s.x; }).attr("cy", function (s) { return s.y; });
+
+      var pins = svg.append("g").selectAll("g").data(placed).join("g").attr("class", "pin")
+        .attr("transform", function (s) { return "translate(" + s.px + "," + s.py + ")"; })
+        .attr("role", "button").attr("tabindex", 0).attr("aria-label", function (s) { return s.title; })
+        .on("click", function (ev, s) { go(stops.indexOf(s)); })
+        .on("keydown", function (ev, s) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(stops.indexOf(s)); } });
+      var inner = pins.append("g").attr("class", "pin-in");
+      inner.append("circle").attr("class", "disc").attr("r", pr);
+      inner.append("text").attr("class", "emo").style("font-size", narrow ? "13px" : "17px").text(function (s) { return s.emo; });
+      inner.append("circle").attr("class", "badge").attr("r", narrow ? 6 : 7).attr("cx", pr * 0.75).attr("cy", -pr * 0.75);
+      inner.append("text").attr("class", "num").attr("x", pr * 0.75).attr("y", -pr * 0.75).style("font-size", narrow ? "9px" : null)
+        .text(function (s) { return s.n; });
+      R.enter(inner, phase,
+        function (s) { s.attr("transform", "scale(0)"); },
+        function (s) { s.delay(function (d, i) { return phase === "play" ? i * 90 : 0; }).attr("transform", "scale(1)"); });
+
+      api = function () {
+        var s = stops[cur];
+        pins.classed("is-on", function (q) { return q === s; });
+        if (s.where) pins.filter(function (q) { return q === s; }).raise();
+        var iso = ISO[s.where];
+        land.classed("is-on", function (f) {
+          if (s.where === "Europa") return ["FRA", "ITA", "DEU", "GBR", "HUN"].indexOf(f.properties.iso) >= 0;
+          return f.properties.iso === iso;
+        });
+        flows.style("stroke", function (q) { return q === s ? "var(--red)" : null; })
+          .style("stroke-width", function (q) { return q === s ? 2 : null; });
+      };
+      api();
+    });
+    go(0);
+  }).catch(function (e) { R.fail("#map", e); });
+})();
+</script>
+</body>
+</html>

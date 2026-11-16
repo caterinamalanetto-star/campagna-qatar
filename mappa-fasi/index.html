@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dove è passata la campagna, fase per fase – Radar QN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap">
+<link rel="stylesheet" href="../assets/radar.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="../assets/radar.js"></script>
+<style>
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; margin: 22px 0 10px; }
+  .seg button {
+    font: 600 13px var(--sans); color: var(--ink-2); background: transparent;
+    border: 1px solid var(--rule); border-radius: 999px; padding: 7px 14px; cursor: pointer;
+    transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+  }
+  .seg button:hover { border-color: var(--ink-2); color: var(--ink); }
+  .seg button.on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  .phase-info { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 14px; color: var(--ink-2); margin: 0 0 4px; }
+  .phase-info .emo { font-size: 26px; line-height: 1; }
+  .phase-info b { color: var(--ink); }
+  .land { fill: var(--grey-5); stroke: var(--bg); stroke-width: 0.6; }
+  :root[data-theme="dark"] .land { fill: #26282a; }
+  .land.hit-c { fill: var(--blue-5); }
+  .land.hit-it { fill: var(--red-5); }
+  .bub { stroke: var(--bg); stroke-width: 1.5; }
+  .bub-lab { font-size: 13px; font-weight: 700; fill: var(--ink); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
+  .bub-lab .v { font-weight: 500; fill: var(--ink-2); }
+  .inset { fill: none; stroke: var(--ink-2); stroke-dasharray: 3 3; stroke-width: 0.75; }
+</style>
+</head>
+<body>
+<main class="radar">
+  <header>
+    <h1 class="r-title">Dove è passata la campagna, fase per fase</h1>
+    <p class="r-sub">Esposizioni agli annunci della campagna anti-Qatar per Paese, in milioni. Scegli una fase</p>
+  </header>
+
+  <div class="seg" id="seg" role="tablist" aria-label="Fase della campagna"></div>
+  <p class="phase-info" id="info" aria-live="polite"></p>
+
+  <figure class="r-chart" id="map" style="margin-top:6px"></figure>
+  <p class="r-key" id="rank"></p>
+  <p class="r-note" id="note"></p>
+
+  <footer class="r-foot">
+    <span>Fonte: M. O. Jones e S. Dsouza, <i>Manufacturing the “Great Replacement”</i> (2026); confini Natural Earth</span>
+    <span>Elaborazione Radar – QN</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var R = Radar, fmt = R.fmt, f1 = function (v) { return fmt(v, 1); };
+  var PHASES = [
+    { k: "Fase 1", emo: "📘", txt: "<b>Ottobre 2023-luglio 2024.</b> Quasi tutta su Facebook: Regno Unito, Stati Uniti, Francia" },
+    { k: "Fase 2", emo: "⏸️", txt: "<b>Novembre-dicembre 2024.</b> Una breve parentesi, rivolta soprattutto all'Ungheria" },
+    { k: "Fase 3", emo: "📱", txt: "<b>Ottobre 2025-ottobre 2026.</b> Passa a YouTube e TikTok, lascia gli Usa e scopre l'Italia" },
+    { k: "Tre anni", emo: "🗓️", txt: "<b>Ottobre 2023-ottobre 2026.</b> Le tre fasi sommate" }
+  ];
+  var cur = 2;
+
+  Promise.all([R.loadCSV("../data/mappa-esposizioni.csv"), fetch("../data/europa.geojson").then(function (r) { return r.json(); })]).then(function (res) {
+    var rows = res[0].map(function (r) {
+      var v = [R.num(r["Fase 1"]) || 0, R.num(r["Fase 2"]) || 0, R.num(r["Fase 3"]) || 0];
+      v.push(v[0] + v[1] + v[2]);
+      return { k: r["Paese"], iso: r["ISO"], lon: R.num(r["Lon"]), lat: R.num(r["Lat"]), v: v };
+    });
+    var places = rows.filter(function (d) { return d.lon != null; });
+    var usa = rows.find(function (d) { return d.iso === "USA"; });
+    var other = rows.find(function (d) { return d.k === "Altri Paesi"; });
+    var geo = res[1];
+    // d3 vuole gli anelli in senso orario: se un paese "copre il mondo", lo giro
+    geo.features.forEach(function (f) {
+      if (d3.geoArea(f) > 2 * Math.PI) f.geometry.coordinates.forEach(function (p) { p.forEach(function (r) { r.reverse(); }); });
+    });
+    var byIso = {}; rows.forEach(function (d) { if (d.iso) byIso[d.iso] = d; });
+    var vmax = d3.max(rows.filter(function (d) { return d !== other; }), function (d) { return d3.max(d.v); });
+
+    var seg = d3.select("#seg").selectAll("button").data(PHASES).join("button")
+      .attr("role", "tab").text(function (d) { return d.k; })
+      .on("click", function (ev, d) { cur = PHASES.indexOf(d); update(true); });
+
+    var host = document.getElementById("map");
+    var tip = R.tooltip(host);
+    R.dismissOutside(host, function () { tip.hide(); });
+    var api = null, ready = false;
+
+    function update(animate) {
+      seg.classed("on", function (d, i) { return i === cur; }).attr("aria-selected", function (d, i) { return i === cur; });
+      d3.select("#info").html('<span class="emo" aria-hidden="true">' + PHASES[cur].emo + "</span><span>" + PHASES[cur].txt + "</span>");
+      var ranked = rows.filter(function (d) { return d !== other && d.v[cur] > 0; }).sort(function (a, b) { return b.v[cur] - a.v[cur]; });
+      d3.select("#rank").html(ranked.map(function (d) {
+        return '<span><i class="sw" style="border-radius:50%;background:' + (d.iso === "ITA" ? "var(--red)" : "var(--blue)") + '"></i>' + d.k + " <b style=\"color:var(--ink)\">" + f1(d.v[cur]) + "</b></span>";
+      }).join(""));
+      d3.select("#note").text("Altri Paesi, non in mappa: " + f1(other.v[cur]) + " milioni. Gli Stati Uniti sono nel riquadro in basso a sinistra. Esposizioni: visualizzazioni registrate dalle piattaforme, non persone.");
+      if (api && ready) api(animate);
+    }
+
+    R.responsive(host, function (W, phase) {
+      var narrow = R.isNarrow(W);
+      var H = Math.round(W * (narrow ? 1.05 : 0.72));
+      var proj = d3.geoConicConformal().rotate([-12, 0]).parallels([35, 62])
+        .fitExtent([[6, 6], [W - 6, H - 6]], { type: "MultiPoint", coordinates: [[-10, 36], [37, 33], [30, 60], [-8, 59], [14, 63]] });
+      var path = d3.geoPath(proj);
+      var r = d3.scaleSqrt().domain([0, vmax]).range([0, narrow ? W * 0.085 : W * 0.085]);
+
+      d3.select(host).select("svg").remove();
+      var svg = d3.select(host).insert("svg", ".r-tip").attr("width", W).attr("height", H).attr("role", "img");
+      svg.append("title").text("Mappa delle esposizioni alla campagna per Paese");
+      svg.append("defs").append("clipPath").attr("id", "clip").append("rect").attr("width", W).attr("height", H);
+      var gl = svg.append("g").attr("clip-path", "url(#clip)");
+      var land = gl.selectAll("path").data(geo.features).join("path").attr("class", "land").attr("d", path);
+
+      // riquadro Stati Uniti
+      var ib = { x: 4, y: H - (narrow ? 96 : 110), w: narrow ? 92 : 112, h: narrow ? 92 : 106 };
+      usa.x = ib.x + ib.w / 2; usa.y = ib.y + ib.h / 2 - 6;
+      var ins = svg.append("g");
+      ins.append("rect").attr("class", "inset").attr("x", ib.x).attr("y", ib.y).attr("width", ib.w).attr("height", ib.h).attr("rx", 4);
+      ins.append("text").attr("class", "tick-label").attr("x", ib.x + 6).attr("y", ib.y + 14).text("Fuori mappa");
+      places.forEach(function (d) { var p = proj([d.lon, d.lat]); d.x = p[0]; d.y = p[1]; });
+      var pts = places.concat([usa]);
+
+      var bubs = svg.append("g").selectAll("circle").data(pts).join("circle").attr("class", "bub mark")
+        .attr("cx", function (d) { return d.x; }).attr("cy", function (d) { return d.y; })
+        .style("fill", function (d) { return d.iso === "ITA" ? "var(--red)" : "var(--blue)"; })
+        .style("fill-opacity", 0.85).attr("r", 0);
+      var labs = svg.append("g").selectAll("text").data(pts).join("text").attr("class", "bub-lab").attr("text-anchor", "middle");
+
+      function draw(animate) {
+        var i = cur;
+        svg.attr("aria-label", "Mappa, " + PHASES[i].k + ": " + pts.filter(function (d) { return d.v[i] > 0; })
+          .sort(function (a, b) { return b.v[i] - a.v[i]; })
+          .map(function (d) { return d.k + " " + f1(d.v[i]) + " milioni"; }).join(", ") + ".");
+        land.attr("class", function (f) {
+          var d = byIso[f.properties.iso];
+          return "land" + (d && d.v[i] > 0 ? (d.iso === "ITA" ? " hit-it" : " hit-c") : "");
+        });
+        var t = animate ? d3.transition().duration(R.DUR).ease(R.EASE) : null;
+        (t ? bubs.transition(t) : bubs).attr("r", function (d) { return d.v[i] > 0 ? Math.max(3, r(d.v[i])) : 0; });
+        labs.each(function (d) {
+          var el = d3.select(this).text(null);
+          if (!(d.v[i] > 0)) return;
+          var rr = Math.max(3, r(d.v[i]));
+          var nearR = d.x > W - 70;
+          el.attr("x", nearR ? d.x + rr : d.x).attr("y", d.y + rr + 15).attr("text-anchor", nearR ? "end" : "middle");
+          if (narrow && d.iso !== "USA") {
+            // su mobile solo il valore, accanto alla bolla
+            el.attr("x", nearR ? d.x - rr - 4 : d.x + rr + 4).attr("y", d.y).attr("dy", "0.35em").attr("text-anchor", nearR ? "end" : "start");
+          } else el.append("tspan").text(d.k + " ");
+          var v = el.append("tspan").attr("class", narrow && d.iso !== "USA" ? null : "v");
+          if (animate) R.countUp(v, d.v[i], f1, "play"); else v.text(f1(d.v[i]));
+        });
+        // gli Usa: etichetta dentro il riquadro, sotto la bolla
+        labs.filter(function (d) { return d.iso === "USA"; }).attr("y", ib.y + ib.h - 6).style("font-size", "12px");
+      }
+      api = draw;
+      bubs.on("pointerenter pointerdown", function (ev, d) {
+        bubs.classed("is-dimmed", function (q) { return q !== d; });
+        tip.show(R.tipHTML({ title: d.k, value: f1(d.v[cur]), unit: "mln · " + PHASES[cur].k.toLowerCase(),
+          rows: [["Fase 1", f1(d.v[0])], ["Fase 2", f1(d.v[1])], ["Fase 3", f1(d.v[2])]],
+          note: d.iso === "ITA" ? "Nessun annuncio rivolto all'Italia prima di ottobre 2025" : null }), d.x, d.y - 10);
+      }).on("pointerleave", function (ev) { if (ev.pointerType === "mouse") { tip.hide(); bubs.classed("is-dimmed", false); } });
+
+      if (phase !== "pre") ready = true;
+      draw(phase === "play");
+      if (phase === "pre") { bubs.attr("r", 0); labs.style("opacity", 0); }
+    });
+    update(false);
+  }).catch(function (e) { R.fail("#map", e); });
+})();
+</script>
+</body>
+</html>
