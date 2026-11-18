@@ -66,13 +66,13 @@
 <main class="radar">
   <header>
     <h1 class="r-title">Cronaca o propaganda?</h1>
-    <p class="r-sub">Un feed simulato: 11 post sono annunci della campagna anti-Qatar, 11 sono notizie vere, con foto ANSA. Spesso mostrano le stesse scene. Riesci a distinguerli?</p>
+    <p class="r-sub">Un feed simulato: <span id="n-ad">9</span> post sono annunci della campagna anti-Qatar, <span id="n-no">11</span> sono notizie vere, con foto ANSA. Spesso mostrano le stesse scene. Riesci a distinguerli?</p>
   </header>
 
   <div class="bar">
     <p class="how"><b>Tocca un post</b> e decidi se è propaganda o cronaca: ti diciamo subito se hai ragione, e perché.</p>
     <div class="tally">
-      <div><b class="red" id="t-found">0</b><span>annunci scoperti su 11</span></div>
+      <div><b class="red" id="t-found">0</b><span>annunci scoperti su <i id="t-tot" style="font-style:normal">9</i></span></div>
       <div><b id="t-ok">0</b><span>risposte giuste su <i id="t-done" style="font-style:normal">0</i></span></div>
     </div>
   </div>
@@ -105,13 +105,15 @@
 <script>
 (function () {
   var R = Radar;
-  var V = "?v=4";
+  var V = "?v=5";
   var PLAY = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/></svg>';
   var STACK = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="14.5" height="14.5" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 7v11.5A2.5 2.5 0 0 0 6.5 21H17" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
   function img(d) { return "url(../video/feed/" + d.id + ".jpg" + V + ")"; }
   R.loadCSV("../data/trova-feed.csv" + V).then(function (rows) {
     var items = rows.map(function (r) { return { id: r["Id"], ad: r["Tipo"] === "annuncio", vid: r["Video"] === "si", src: r["Fonte"], x: r["Spiegazione"], ans: null }; });
     var order = [], cur = null, det = null;
+    var nAd = items.filter(function (d) { return d.ad; }).length;
+    d3.select("#n-ad").text(nAd); d3.select("#n-no").text(items.length - nAd); d3.select("#t-tot").text(nAd);
     var grid = document.getElementById("grid");
 
     function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
@@ -180,7 +182,7 @@
       if (done.length === items.length) {
         var wrongNo = items.filter(function (d) { return !d.ad && d.ans; }).length;
         d3.select("#e-title").text(ok === items.length ? "🎯 Nessuno ti ha ingannato" : ok >= 19 ? "👏 Ottimo occhio" : ok >= 14 ? "🔎 Non male, ma la propaganda si mimetizza" : "😮 La propaganda si mimetizza bene");
-        d3.select("#e-txt").text("Hai scoperto " + found + (found === 1 ? " annuncio" : " annunci") + " su 11" + (wrongNo ? " e hai scambiato " + wrongNo + (wrongNo === 1 ? " notizia vera" : " notizie vere") + " per propaganda" : "") +
+        d3.select("#e-txt").text("Hai scoperto " + found + (found === 1 ? " annuncio" : " annunci") + " su " + nAd + (wrongNo ? " e hai scambiato " + wrongNo + (wrongNo === 1 ? " notizia vera" : " notizie vere") + " per propaganda" : "") +
           ". Su un feed vero non c'è nessuno a dirti la risposta: la campagna ha raccolto 533 milioni di esposizioni.");
         d3.select("#end").classed("on", true);
       }
