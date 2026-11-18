@@ -38,13 +38,11 @@
   .side { max-width: 380px; }
   .count { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red); }
   .side h2 { font-family: var(--serif); font-size: 28px; line-height: 1.1; margin: 6px 0 8px; color: var(--title); }
-  .side .lang { display: inline-block; font-size: 11px; font-weight: 600; color: var(--ink-2); border: 1px solid var(--rule); border-radius: 999px; padding: 1px 9px; }
-  .side .lang.it { color: var(--red); border-color: var(--red); }
   .side p { font-size: 15px; line-height: 1.5; margin: 10px 0 0; color: var(--ink); min-height: 4.5em; }
   .side .txt { transition: opacity 250ms ease; }
   .side .txt.fade { opacity: 0; }
-  .thumbs { display: flex; gap: 6px; margin-top: 18px; flex-wrap: wrap; }
-  .thumbs button { width: 38px; height: 56px; padding: 0; border: 2px solid transparent; border-radius: 6px; overflow: hidden; cursor: pointer; background: #000; opacity: 0.55; transition: opacity 160ms ease; }
+  .thumbs { display: flex; gap: 5px; margin-top: 18px; flex-wrap: wrap; }
+  .thumbs button { width: 32px; height: 48px; padding: 0; border: 2px solid transparent; border-radius: 6px; overflow: hidden; cursor: pointer; background: #000; opacity: 0.55; transition: opacity 160ms ease; }
   .thumbs button.on { border-color: var(--red); opacity: 1; }
   .thumbs img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(0.4); }
   @media (max-width: 599px) { .side { width: 100%; } .side h2 { font-size: 24px; } }
@@ -54,10 +52,10 @@
 <main class="radar">
   <header>
     <h1 class="r-title">Gli annunci, guardati da vicino</h1>
-    <p class="r-sub">Sei video della campagna anti-Qatar diffusi come pubblicità sui social, tre dei quali in italiano</p>
+    <p class="r-sub">Dieci esempi della campagna anti-Qatar, diffusi come pubblicità sui social</p>
   </header>
 
-  <p class="warn"><span aria-hidden="true">⚠️</span><span><b>Contengono propaganda razzista e anti-musulmana.</b> Li mostriamo, senza audio, per documentare la campagna. Le immagini di persone reali sono riprese fuori dal loro contesto.</span></p>
+  <p class="warn"><span aria-hidden="true">⚠️</span><span><b>Contengono propaganda razzista e anti-musulmana e, in un caso, immagini violente.</b> Li mostriamo, senza audio, per documentare la campagna. Le immagini di persone reali sono riprese fuori dal loro contesto.</span></p>
 
   <div class="stage">
     <div class="phone" id="phone">
@@ -72,7 +70,6 @@
       <div class="txt" id="txt">
         <span class="count" id="count"></span>
         <h2 id="title"></h2>
-        <span class="lang" id="lang"></span>
         <p id="desc"></p>
       </div>
       <div class="thumbs" id="thumbs"></div>
@@ -108,7 +105,6 @@
       setTimeout(function () {
         d3.select("#count").text("Annuncio " + (cur + 1) + " di " + rows.length);
         d3.select("#title").text(d["Titolo"]);
-        d3.select("#lang").attr("class", "lang" + (d["Lingua"] === "Italiano" ? " it" : "")).text(d["Lingua"]);
         d3.select("#desc").text(d["Testo"]);
         txt.classList.remove("fade");
         R.scheduleHeight();
