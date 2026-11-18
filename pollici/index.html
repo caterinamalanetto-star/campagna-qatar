@@ -53,7 +53,46 @@
   <div class="grid" id="grid" role="img"></div>
   <p class="verdict" id="verdict"></p>
 
-  " +
+  <p class="r-note">👍 approva il messaggio · 👎 lo respinge, spesso definendolo razzista o propaganda · 💬 né l'uno né l'altro. Percentuali sui commenti di ogni lingua: 460 in italiano, 2.560 in tutto, classificati dai ricercatori.</p>
+
+  <footer class="r-foot">
+    <span>Fonte: M. O. Jones e S. Dsouza, <i>Manufacturing the “Great Replacement”</i> (2026)</span>
+    <span>Elaborazione Radar – QN</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var R = Radar, fmt = R.fmt;
+  R.loadCSV("../data/commenti-lingua.csv").then(function (rows) {
+    var langs = rows.map(function (r) {
+      var f = R.num(r["Favorevoli"]), c = R.num(r["Contrari"]);
+      return { k: r["Lingua del commento"], f: f, c: c, m: 100 - f - c };
+    });
+    var cur = 0;
+    var cells = d3.select("#grid").selectAll("i").data(d3.range(100)).join("i");
+
+    var seg = d3.select("#seg").selectAll("button").data(langs).join("button")
+      .attr("role", "tab").classed("it", function (d) { return d.k === "Italiano"; })
+      .text(function (d) { return d.k; })
+      .on("click", function (ev, d) { cur = langs.indexOf(d); show(true); });
+
+    function show(animate) {
+      var d = langs[cur];
+      seg.classed("on", function (q) { return q === d; }).attr("aria-selected", function (q) { return q === d; });
+      cells.each(function (i) {
+        var el = d3.select(this), t = i < d.f ? "up" : (i < d.f + d.c ? "down" : "mid");
+        var e = t === "up" ? "👍" : (t === "down" ? "👎" : "💬");
+        if (el.attr("data-t") === t) return;
+        el.attr("data-t", t);
+        if (animate && !R.reduced) {
+          el.classed("pop", true);
+          setTimeout(function () { el.attr("class", t).text(e); }, 120 + (i % 20) * 12);
+        } else el.attr("class", t).text(e);
+      });
+      d3.select("#grid").attr("aria-label", "Su cento commenti in " + d.k.toLowerCase() + ": " + d.f + " approvano, " + d.c + " respingono, " + d.m + " né l'uno né l'altro.");
+      d3.select("#score").html(
+        '<div class="up"><span class="e" aria-hidden="true">👍</span><b>' + d.f + "</b><span>approvano</span></div>" +
         '<div><span class="e" aria-hidden="true">👎</span><b>' + d.c + "</b><span>respingono</span></div>" +
         '<div><span class="e" aria-hidden="true">💬</span><b style="color:var(--ink-2)">' + d.m + "</b><span>né l'uno né l'altro</span></div>");
       var diff = d.f - d.c;
