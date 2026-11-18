@@ -141,7 +141,7 @@
   var R = Radar;
   var PLAY = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/></svg>';
   var STACK = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="14.5" height="14.5" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 7v11.5A2.5 2.5 0 0 0 6.5 21H17" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
-  R.loadCSV("../data/trova-feed.csv").then(function (rows) {
+  R.loadCSV("../data/trova-feed.csv?v=3").then(function (rows) {
     var items = rows.map(function (r) { return { id: r["Id"], ad: r["Tipo"] === "annuncio", vid: r["Video"] === "si", src: r["Fonte"], x: r["Spiegazione"], ans: null }; });
     var order = [], cur = null;
     var grid = d3.select("#grid"), sheet = document.getElementById("sheet");
@@ -153,7 +153,7 @@
       grid.selectAll("button").remove();
       grid.selectAll("button").data(order, function (d) { return d.id; }).join("button")
         .attr("class", "tile").attr("role", "listitem").attr("aria-label", "Apri il post")
-        .style("background-image", function (d) { return "url(../video/feed/" + d.id + ".jpg)"; })
+        .style("background-image", function (d) { return "url(../video/feed/" + d.id + ".jpg?v=3)"; })
         .html(function (d) { return d.vid ? PLAY : STACK; })
         .on("click", function (ev, d) { open(d); });
       document.getElementById("grid").scrollTop = 0;
@@ -162,7 +162,7 @@
     }
     function open(d) {
       cur = d;
-      d3.select("#pic").style("background-image", "url(../video/feed/" + d.id + ".jpg)");
+      d3.select("#pic").style("background-image", "url(../video/feed/" + d.id + ".jpg?v=3)");
       sheet.classList.toggle("done", d.ans !== null);
       if (d.ans !== null) verdict(d);
       sheet.classList.add("on");
