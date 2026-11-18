@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>La campagna in otto tappe – Radar QN</title>
+<title>La campagna in sette tappe – Radar QN</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap">
@@ -39,7 +39,7 @@
 <body>
 <main class="radar">
   <header>
-    <h1 class="r-title">La campagna in otto tappe</h1>
+    <h1 class="r-title">La campagna in sette tappe</h1>
     <p class="r-sub">Cento pallini per raccontare la propaganda anti-Qatar, dalla prima inserzione alle elezioni del 2027. Tocca il grafico o usa le frecce</p>
   </header>
 
@@ -67,9 +67,6 @@
     var p1 = round(N["Fase 1 (milioni)"] / tot * 100), p2 = Math.max(1, round(N["Fase 2 (milioni)"] / tot * 100)), p3 = 100 - p1 - p2;
     var it = round(N["Italia fase 3 (milioni)"] / tot * 100), fr = round(N["Francia fase 3 (milioni)"] / tot * 100);
     var yt = round(N["YouTube Italia (milioni)"] / tot * 100);
-    var wd = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"];
-    var rend = wd.map(function (d) { return N["Render " + d]; });
-    var rendTot = d3.sum(rend);
 
     var STEPS = [
       { k: "Ottobre 2023 – ottobre 2026", h: "533 milioni di esposizioni", p: "Annunci razzisti e anti-musulmani in 30 Paesi. Ogni pallino è l'1% delle esposizioni registrate dalle piattaforme." },
@@ -78,7 +75,6 @@
       { k: "Italia", h: "Da zero a 76 milioni", p: "Nessun annuncio rivolto agli italiani prima di ottobre 2025. Nell'ultima fase l'Italia ne riceve " + fmt(N["Italia fase 3 (milioni)"], 1) + " milioni: dopo la Francia, è il Paese più colpito." },
       { k: "Il motore", h: "Metà la fa YouTube", p: "Solo 36 video su YouTube portano " + fmt(N["YouTube Italia (milioni)"], 1) + " milioni di visualizzazioni in Italia, circa metà del totale." },
       { k: "Usa e getta", h: "Una pagina vive tre giorni", p: "La pagina tipica fa pubblicità per tre giorni e sparisce. Meta chiude la rete nel 2024, YouTube quattro canali nel 2026: la campagna riparte ogni volta." },
-      { k: "Indizi", h: "Si lavora da domenica a giovedì", p: "I " + rendTot + " video recuperati dal canale Telegram sono stati esportati tutti tra domenica e giovedì, tranne uno riciclato. Un calendario che porta in Israele: indizi, non prove." },
       { k: "Che cosa ci aspetta", h: "Nel 2027 votano Italia e Francia", p: "La rete è ancora attiva. Il rischio, avvertono i ricercatori, è un'azione a lento rilascio che sposta il clima politico molto prima dell'apertura dei seggi." }
     ];
     var cur = 0;
@@ -125,19 +121,6 @@
       }
       if (step === 5) { for (i = 0; i < 100; i++) out.push({ p: base(i), c: "var(--blue)", o: 1, blink: true }); }
       if (step === 6) {
-        // colonne per giorno della settimana
-        var cw = Math.min(W / 7, 90), per = narrow ? 2 : 3, s2 = Math.min(cw / (per + 0.6), 16), k2 = 0;
-        rend.forEach(function (n, d) {
-          for (var j = 0; j < n; j++, k2++) {
-            var x = (W - cw * 7) / 2 + d * cw + cw / 2 + ((j % per) - (per - 1) / 2) * s2, y = gy + 260 - Math.floor(j / per) * s2;
-            out.push({ p: [x, y], c: d >= 5 ? "var(--red)" : "var(--blue)", o: 1, rr: s2 * 0.4 });
-          }
-        });
-        for (; k2 < 100; k2++) out.push({ p: [W / 2, gy + 300], c: "var(--grey-5)", o: 0 });
-        wd.forEach(function (d, i) { lab.push({ x: (W - cw * 7) / 2 + i * cw + cw / 2, y: gy + 290, t: narrow ? d.slice(0, 3) : d, s: String(rend[i]), c: i >= 5 ? "var(--red)" : null }); });
-        lab.push({ x: (W + cw * 7) / 2 - 2, y: gy + 332, t: narrow ? "Weekend in Israele" : "Fine settimana in Israele", c: "var(--red)", a: "end" });
-      }
-      if (step === 7) {
         var cx2 = [W * 0.3, W * 0.7], counts2 = [it, fr], k3 = 0, gc2 = 6, s3 = narrow ? 18 : 24;
         counts2.forEach(function (n, f) {
           for (var j = 0; j < n; j++, k3++) out.push({ p: [cx2[f] - gc2 * s3 / 2 + (j % gc2) * s3 + s3 / 2, gy + 40 + Math.floor(j / gc2) * s3], c: f === 0 ? "var(--red)" : "var(--blue)", o: 1, rr: s3 * 0.38, pulse: true });

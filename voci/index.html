@@ -43,7 +43,7 @@
   <p class="sec-sub">Numero di commenti per tema; uno stesso commento può rientrare in più temi</p>
   <figure class="r-chart" id="pack" style="margin-top:6px"></figure>
   <div class="keys" id="tkey" style="margin-top:4px"></div>
-  <p class="r-note">In rosso l'ostilità verso i bersagli dell'annuncio, in blu quella rivolta contro Israele e gli ebrei. Una propaganda contro i musulmani finisce così per alimentare anche l'antisemitismo: circa un quinto di chi respinge l'annuncio lo fa con ostilità verso Israele o gli ebrei. La classificazione è una lettura di un agente di intelligenza artificiale, indicativa.</p>
+  <p class="r-note">In rosso l'ostilità verso i bersagli dell'annuncio, in grigio gli altri temi. La classificazione è una lettura di un agente di intelligenza artificiale, indicativa.</p>
 
   <footer class="r-foot">
     <span>Fonte: M. O. Jones e S. Dsouza, <i>Manufacturing the “Great Replacement”</i> (2026)</span>
@@ -55,7 +55,7 @@
 (function () {
   var R = Radar, fmt = R.fmt;
   var AV = { favorevole: "😠", contrario: "🙄", neutro: "🤔" };
-  var COL = { bersaglio: "var(--red)", israele: "var(--blue)", altro: "var(--grey-3)", difesa: "var(--grey-4)" };
+  var COL = { bersaglio: "var(--red)", altro: "var(--grey-3)", difesa: "var(--grey-4)" };
   Promise.all([R.loadCSV("../data/commenti-voci.csv"), R.loadCSV("../data/commenti-temi.csv")]).then(function (res) {
     var msgs = d3.select("#chat").selectAll("div").data(res[0]).join("div")
       .attr("class", function (d, i) { return "msg " + d["Chi"] + (d["Chi"] === "contrario" ? " r" : "") + (R.reduced ? "" : " pre"); });

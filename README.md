@@ -16,13 +16,12 @@ Fonte: M. O. Jones e S. Dsouza, *Manufacturing the “Great Replacement”* (202
 - **Gli annunci, guardati da vicino** – `annunci-video/` – sei annunci video (cartella `video/`: ricodificati 360×640, senza audio)
 - **Quanto ne sai? Indovina il numero** – `indovina/` – quiz con cursore (dati in `data/quiz.csv`)
 - **Video con i dati** – `video/campagna-qatar-16x9.mp4`, `video/campagna-qatar-9x16.mp4` (30 s)
-- **La campagna in otto tappe** – `la-storia/` – Racconto a tappe con cento pallini che si trasformano (tocca o usa le frecce)
+- **La campagna in sette tappe** – `la-storia/` – Racconto a tappe con cento pallini che si trasformano (tocca o usa le frecce)
 - **Trova l'annuncio** – `trova-annuncio/` – Gioco: feed simulato, sei annunci veri e sei post inventati
 - **Un centesimo per ogni schermo** – `quanto-costa/` – Calcolatore: quanta propaganda si comprava con una cifra
 - **Identità usa e getta** – `usa-e-getta/` – Quanto vivevano pagine e annunci; i canali YouTube chiusi e riaperti
-- **Indizi, non prove** – `indizi/` – Heatmap delle 1.231 modifiche ai video per giorno e ora, schede degli indizi
 - **Le voci sotto i video** – `voci/` – Le frasi tipo dei commenti e i temi, in bolle
-- **Carosello Instagram** – `social/radar-qatar-1..8.png`
+- **Carosello Instagram** – `social/radar-qatar-1..7.png`
 
 ## Trasformazioni
 - `italia-piattaforme.csv`: «Altri annunci» = 76,2 milioni (totale Italia) − 37,5 (YouTube).

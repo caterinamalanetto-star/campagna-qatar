@@ -39,12 +39,6 @@
   @media (max-width: 519px) { .score { gap: 6px 18px; } .score b { font-size: 26px; } .score .e { font-size: 20px; } .grid { grid-template-columns: repeat(10, 1fr); } .grid i { border-radius: 6px; font-size: 18px; } }
   .verdict { font-size: 15px; line-height: 1.45; margin: 16px 0 0; min-height: 44px; }
   .verdict b { color: var(--red); }
-  .seven { margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
-  .seven .row { display: flex; gap: 4px; font-size: 26px; }
-  .seven .row span { opacity: 0.3; }
-  .seven .row span.hi { opacity: 1; }
-  .seven p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink-2); flex: 1 1 260px; }
-  .seven p b { color: var(--ink); }
 </style>
 </head>
 <body>
@@ -59,51 +53,7 @@
   <div class="grid" id="grid" role="img"></div>
   <p class="verdict" id="verdict"></p>
 
-  <div class="seven" aria-label="Circa un commentatore su sette attribuisce gli annunci a Israele">
-    <div class="row" id="seven" aria-hidden="true"></div>
-    <p id="seven-txt"></p>
-  </div>
-  <p class="r-note">👍 approva il messaggio · 👎 lo respinge, spesso definendolo razzista o propaganda · 💬 né l'uno né l'altro. Percentuali sui commenti di ogni lingua: 460 in italiano, 2.560 in tutto, classificati dai ricercatori.</p>
-
-  <footer class="r-foot">
-    <span>Fonte: M. O. Jones e S. Dsouza, <i>Manufacturing the “Great Replacement”</i> (2026)</span>
-    <span>Elaborazione Radar – QN</span>
-  </footer>
-</main>
-
-<script>
-(function () {
-  var R = Radar, fmt = R.fmt;
-  Promise.all([R.loadCSV("../data/commenti-lingua.csv"), R.loadCSV("../data/commenti-italia-extra.csv")]).then(function (res) {
-    var langs = res[0].map(function (r) {
-      var f = R.num(r["Favorevoli"]), c = R.num(r["Contrari"]);
-      return { k: r["Lingua del commento"], f: f, c: c, m: 100 - f - c };
-    });
-    var oneIn = R.num(res[1][0]["Valore"]);
-    var cur = 0;
-    var cells = d3.select("#grid").selectAll("i").data(d3.range(100)).join("i");
-
-    var seg = d3.select("#seg").selectAll("button").data(langs).join("button")
-      .attr("role", "tab").classed("it", function (d) { return d.k === "Italiano"; })
-      .text(function (d) { return d.k; })
-      .on("click", function (ev, d) { cur = langs.indexOf(d); show(true); });
-
-    function show(animate) {
-      var d = langs[cur];
-      seg.classed("on", function (q) { return q === d; }).attr("aria-selected", function (q) { return q === d; });
-      cells.each(function (i) {
-        var el = d3.select(this), t = i < d.f ? "up" : (i < d.f + d.c ? "down" : "mid");
-        var e = t === "up" ? "👍" : (t === "down" ? "👎" : "💬");
-        if (el.attr("data-t") === t) return;
-        el.attr("data-t", t);
-        if (animate && !R.reduced) {
-          el.classed("pop", true);
-          setTimeout(function () { el.attr("class", t).text(e); }, 120 + (i % 20) * 12);
-        } else el.attr("class", t).text(e);
-      });
-      d3.select("#grid").attr("aria-label", "Su cento commenti in " + d.k.toLowerCase() + ": " + d.f + " approvano, " + d.c + " respingono, " + d.m + " né l'uno né l'altro.");
-      d3.select("#score").html(
-        '<div class="up"><span class="e" aria-hidden="true">👍</span><b>' + d.f + "</b><span>approvano</span></div>" +
+  " +
         '<div><span class="e" aria-hidden="true">👎</span><b>' + d.c + "</b><span>respingono</span></div>" +
         '<div><span class="e" aria-hidden="true">💬</span><b style="color:var(--ink-2)">' + d.m + "</b><span>né l'uno né l'altro</span></div>");
       var diff = d.f - d.c;
@@ -120,9 +70,6 @@
     });
     if (R.reduced) cells.classed("pop", false);
 
-    d3.select("#seven").selectAll("span").data(d3.range(oneIn)).join("span")
-      .classed("hi", function (i) { return i === oneIn - 1; }).text(function (i) { return i === oneIn - 1 ? "🤔" : "🙂"; });
-    d3.select("#seven-txt").html("<b>Circa un commentatore su " + oneIn + "</b> è convinto che dietro gli annunci ci sia Israele; alcuni scivolano in stereotipi antisemiti. Una propaganda contro i musulmani finisce così per alimentare anche l'antisemitismo.");
     R.scheduleHeight();
   }).catch(function (e) { R.fail("#grid", e); });
 })();

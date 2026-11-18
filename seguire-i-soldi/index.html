@@ -65,7 +65,7 @@
     <div class="dots" id="dots"></div>
     <button id="next" aria-label="Tappa successiva">Avanti →</button>
   </div>
-  <p class="r-note">Le linee tratteggiate indicano da dove arrivavano gli account pubblicitari comprati dalla rete. La collocazione degli indizi non dice chi abbia pagato la campagna.</p>
+  <p class="r-note">Le linee tratteggiate indicano da dove arrivavano gli account pubblicitari comprati dalla rete. Chi abbia pagato la campagna non è stato identificato.</p>
 
   <footer class="r-foot">
     <span>Fonte: M. O. Jones e S. Dsouza, <i>Manufacturing the “Great Replacement”</i> (2026); confini Natural Earth</span>
@@ -76,7 +76,7 @@
 <script>
 (function () {
   var R = Radar;
-  var ISO = { "Qatar": "QAT", "Vietnam": "VNM", "San Paolo": "BRA", "New York": "USA", "Germania": "DEU", "Israele": "ISR" };
+  var ISO = { "Qatar": "QAT", "Vietnam": "VNM", "San Paolo": "BRA", "New York": "USA", "Germania": "DEU" };
 
   Promise.all([R.loadCSV("../data/filiera.csv"), fetch("../data/mondo.geojson").then(function (r) { return r.json(); })]).then(function (res) {
     var stops = res[0].map(function (r) {
