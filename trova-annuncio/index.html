@@ -79,9 +79,8 @@
   <div class="bar">
     <p class="how"><b>Tocca un post</b> e decidi se è propaganda o cronaca: ti diciamo subito se hai ragione, e perché.</p>
     <div class="tally">
-      <div><b class="red" id="t-found">0</b><span>annunci scoperti su <i id="t-tot" style="font-style:normal">9</i></span></div>
-      <div><b id="t-ok">0</b><span>risposte giuste su <i id="t-done" style="font-style:normal">0</i></span></div>
-    </div>
+      <div><b id="t-ok">0</b><span>risposte giuste</span></div>
+      <div><b class="red" id="t-ko">0</b><span>sbagliate</span></div></div>
   </div>
   <div class="prog" aria-hidden="true"><i id="prog"></i></div>
 
@@ -197,13 +196,12 @@
     function tally() {
       var done = items.filter(function (d) { return d.ans !== null; });
       var ok = done.filter(function (d) { return d.ans === d.ad; }).length;
-      var found = done.filter(function (d) { return d.ad && d.ans; }).length;
-      d3.select("#t-found").text(found); d3.select("#t-ok").text(ok); d3.select("#t-done").text(done.length);
+      d3.select("#t-ok").text(ok); d3.select("#t-ko").text(done.length - ok);
       d3.select("#prog").style("width", (done.length / items.length * 100) + "%");
       if (done.length === items.length) {
-        var wrongNo = items.filter(function (d) { return !d.ad && d.ans; }).length;
-        d3.select("#e-title").text(ok === items.length ? "🎯 Nessuno ti ha ingannato" : ok >= 19 ? "👏 Ottimo occhio" : ok >= 14 ? "🔎 Non male, ma la propaganda si mimetizza" : "😮 La propaganda si mimetizza bene");
-        d3.select("#e-txt").text("Hai scoperto " + found + (found === 1 ? " annuncio" : " annunci") + " su " + nAd + (wrongNo ? " e hai scambiato " + wrongNo + (wrongNo === 1 ? " notizia vera" : " notizie vere") + " per propaganda" : "") +
+        d3.select("#e-title").text(ok === items.length ? "🎯 Nessuno ti ha ingannato" : ok >= 18 ? "👏 Ottimo occhio" : ok >= 14 ? "🔎 Non male, ma la propaganda si mimetizza" : "😮 La propaganda si mimetizza bene");
+        var ko = items.length - ok;
+        d3.select("#e-txt").text("Su " + items.length + " post hai dato " + ok + (ok === 1 ? " risposta giusta" : " risposte giuste") + " e " + ko + (ko === 1 ? " sbagliata" : " sbagliate") +
           ". Su un feed vero non c'è nessuno a dirti la risposta: la campagna ha raccolto 533 milioni di esposizioni.");
         d3.select("#end").classed("on", true);
       }
