@@ -11,37 +11,66 @@
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 <script src="../assets/radar.js"></script>
 <style>
-  .how { display: flex; gap: 10px; align-items: center; font-size: 14px; margin: 18px 0 16px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--blue) 8%, transparent); }
-  .how b { font-size: 22px; }
-  .feed { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-  @media (max-width: 639px) { .feed { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
-  .post { position: relative; border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; background: var(--tip-bg); cursor: pointer; transition: transform 160ms ease, box-shadow 160ms ease; }
-  .post:hover { transform: translateY(-2px); }
-  .post .hd { display: flex; align-items: center; gap: 6px; padding: 7px 8px; font-size: 11px; color: var(--ink-2); }
-  .post .hd i { width: 18px; height: 18px; border-radius: 50%; background: var(--grey-5); display: inline-block; }
-  .post .img { aspect-ratio: 9 / 13; background: #000 center / cover no-repeat; }
-  .post .fake { aspect-ratio: 9 / 13; display: grid; place-content: center; text-align: center; padding: 12px; gap: 6px; color: #fff; }
-  .post .fake .e { font-size: 46px; line-height: 1; }
-  .post .fake b { font-family: var(--serif); font-size: 19px; line-height: 1.1; }
-  .post .fake span { font-size: 12px; line-height: 1.35; opacity: 0.9; }
-  .post .flag { position: absolute; right: 8px; bottom: 8px; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 17px;
-    background: rgba(255,255,255,0.92); box-shadow: 0 1px 4px rgba(0,0,0,0.25); opacity: 0.55; transition: transform 200ms cubic-bezier(.2,.8,.3,1.6), opacity 160ms; }
-  .post.flagged .flag { opacity: 1; transform: scale(1.15); background: var(--red); }
-  .post.flagged { box-shadow: 0 0 0 3px var(--red); }
-  .post .verdict { position: absolute; inset: auto 0 0 0; padding: 8px; font-size: 11.5px; line-height: 1.35; color: #fff; transform: translateY(100%); transition: transform 360ms ease; }
-  .post.shown .verdict { transform: none; }
-  .post.shown .flag { display: none; }
-  .post.ok-ad .verdict { background: rgba(209,69,47,0.95); }
-  .post.ok-fake .verdict { background: rgba(31,79,209,0.92); }
-  .post .verdict b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
-  .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
-  .bar span { font-size: 14px; color: var(--ink-2); }
-  .btn { font: 700 15px var(--sans); color: var(--bg); background: var(--ink); border: 0; border-radius: 999px; padding: 11px 24px; cursor: pointer; }
-  .btn:disabled { opacity: 0.35; cursor: default; }
-  .score { margin-top: 18px; border-top: 3px solid var(--red); padding-top: 12px; display: none; }
-  .score.on { display: block; animation: fi 380ms ease both; }
-  .score h2 { font-family: var(--serif); font-size: 26px; margin: 0 0 6px; color: var(--title); }
-  .score p { margin: 0 0 6px; font-size: 15px; line-height: 1.5; }
+  .stage { display: grid; grid-template-columns: 340px 1fr; gap: 30px; align-items: start; margin-top: 18px; }
+  @media (max-width: 619px) { .stage { grid-template-columns: 1fr; gap: 18px; justify-items: center; } }
+  /* telefono */
+  .phone { position: relative; width: 340px; max-width: 100%; height: 660px; border-radius: 38px; background: #1b1c1e; padding: 10px;
+    box-shadow: 0 0 0 1px var(--rule), 0 18px 40px rgba(0,0,0,0.18); }
+  @media (max-width: 380px) { .phone { height: 600px; } }
+  .scr { position: relative; height: 100%; border-radius: 29px; overflow: hidden; background: #fff; color: #111; display: flex; flex-direction: column; }
+  .notch { position: absolute; top: 7px; left: 50%; width: 76px; height: 20px; margin-left: -38px; border-radius: 12px; background: #1b1c1e; z-index: 6; }
+  .status { height: 34px; flex: none; display: flex; justify-content: space-between; align-items: center; padding: 6px 22px 0; font-size: 12px; font-weight: 700; }
+  .top { flex: none; padding: 4px 10px 8px; }
+  .search { display: flex; align-items: center; gap: 6px; height: 32px; border-radius: 10px; background: #efefef; padding: 0 10px; font-size: 13px; color: #777; }
+  .top h3 { margin: 8px 2px 0; font: 700 14px var(--sans); }
+  .grid { flex: 1 1 0; min-height: 0; grid-auto-rows: max-content; overflow-y: auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; align-content: start; scrollbar-width: none; }
+  .grid::-webkit-scrollbar { display: none; }
+  .tile { position: relative; display: block; width: 100%; height: auto; aspect-ratio: 9 / 16; border: 0; padding: 0; background: #ddd center / cover no-repeat; cursor: pointer; overflow: hidden; }
+  .tile .ic { position: absolute; top: 5px; right: 5px; width: 18px; height: 18px; color: #fff; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
+  .tile .res { position: absolute; left: 0; right: 0; bottom: 0; padding: 4px 5px; font: 700 10px var(--sans); letter-spacing: 0.04em; text-transform: uppercase; color: #fff; text-align: left; }
+  .tile.r-ad .res { background: rgba(209,69,47,0.95); }
+  .tile.r-no .res { background: rgba(60,62,64,0.92); }
+  .tile.wrong::after { content: "✗"; position: absolute; top: 4px; left: 6px; font: 700 15px var(--sans); color: #fff; text-shadow: 0 1px 3px #000; }
+  .tile.right::after { content: "✓"; position: absolute; top: 4px; left: 6px; font: 700 15px var(--sans); color: #fff; text-shadow: 0 1px 3px #000; }
+  .nav { flex: none; height: 46px; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #e6e6e6; font-size: 19px; }
+  /* scheda del post */
+  .sheet { position: absolute; inset: 0; z-index: 5; background: #000; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 280ms ease; }
+  .sheet.on { transform: none; }
+  .sheet .pic { flex: 1; min-height: 0; background: #000 center / contain no-repeat; position: relative; }
+  .sheet .x { position: absolute; top: 36px; left: 12px; z-index: 2; width: 32px; height: 32px; border-radius: 50%; border: 0; background: rgba(0,0,0,0.55); color: #fff; font-size: 16px; cursor: pointer; }
+  .sheet .sp { position: absolute; top: 42px; right: 14px; font: 600 11px var(--sans); color: #fff; background: rgba(0,0,0,0.45); padding: 3px 8px; border-radius: 999px; }
+  .sheet .act { flex: none; background: #fff; padding: 12px 14px 14px; }
+  .sheet .q { font: 700 15px var(--sans); margin: 0 0 10px; text-align: center; }
+  .sheet .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .sheet .btns button { font: 700 14px var(--sans); border-radius: 12px; border: 2px solid #111; background: #fff; color: #111; padding: 10px 6px; cursor: pointer; }
+  .sheet .btns button.ad { border-color: #d1452f; color: #d1452f; }
+  .sheet .ver { display: none; }
+  .sheet.done .btns, .sheet.done .q { display: none; }
+  .sheet.done .ver { display: block; }
+  .ver .tag { display: inline-block; font: 700 11px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: #fff; padding: 3px 8px; border-radius: 4px; }
+  .ver .tag.ad { background: #d1452f; } .ver .tag.no { background: #555; }
+  .ver .you { font: 700 15px var(--sans); margin: 8px 0 4px; }
+  .ver p { margin: 0; font-size: 13px; line-height: 1.45; color: #333; }
+  .ver .next { margin-top: 10px; width: 100%; font: 700 14px var(--sans); border: 0; border-radius: 12px; background: #111; color: #fff; padding: 10px; cursor: pointer; }
+  /* pannello */
+  .side { max-width: 360px; }
+  .side .how { font-size: 15px; line-height: 1.5; margin: 0 0 16px; }
+  .side .how b { color: var(--red); }
+  .tally { display: flex; gap: 22px; margin-bottom: 14px; }
+  .tally div { display: flex; flex-direction: column; }
+  .tally b { font: 700 34px var(--sans); line-height: 1; font-variant-numeric: tabular-nums; }
+  .tally b.red { color: var(--red); }
+  .tally span { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+  .prog { height: 6px; border-radius: 3px; background: var(--rule); overflow: hidden; margin-bottom: 16px; }
+  .prog i { display: block; height: 100%; width: 0; background: var(--ink); transition: width 300ms ease; }
+  .tips { font-size: 14px; line-height: 1.5; border-left: 3px solid var(--red); padding-left: 12px; }
+  .tips b { display: block; margin-bottom: 4px; }
+  .tips ul { margin: 0; padding-left: 18px; }
+  .end { display: none; margin-top: 16px; }
+  .end.on { display: block; animation: fi 380ms ease both; }
+  .end h2 { font-family: var(--serif); font-size: 24px; line-height: 1.15; margin: 0 0 6px; color: var(--title); }
+  .end p { margin: 0 0 10px; font-size: 15px; line-height: 1.5; }
+  .btn { font: 700 14px var(--sans); color: var(--bg); background: var(--ink); border: 0; border-radius: 999px; padding: 10px 22px; cursor: pointer; }
   @keyframes fi { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 </style>
 </head>
@@ -49,23 +78,59 @@
 <main class="radar">
   <header>
     <h1 class="r-title">Trova l'annuncio</h1>
-    <p class="r-sub">Un feed simulato: sei immagini sono annunci veri della campagna anti-Qatar, sei sono post inventati da noi con lo stesso stile. Riesci a riconoscere la propaganda?</p>
+    <p class="r-sub">Un feed simulato: 12 post sono annunci veri della campagna anti-Qatar, 12 sono post normali creati da Radar con lo stesso stile. Riesci a riconoscere la propaganda?</p>
   </header>
 
-  <div class="how"><b aria-hidden="true">🚩</b><span>Tocca i post che secondo te sono propaganda, poi premi <b style="font-size:14px">Verifica</b>.</span></div>
+  <div class="stage">
+    <div class="phone">
+      <div class="scr" id="scr">
+        <span class="notch" aria-hidden="true"></span>
+        <div class="status" aria-hidden="true"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="top"><div class="search" aria-hidden="true">🔍 Cerca</div><h3>Per te</h3></div>
+        <div class="grid" id="grid" role="list" aria-label="Post del feed"></div>
+        <div class="nav" aria-hidden="true"><span>🏠</span><span>🔍</span><span>➕</span><span>🎬</span><span>👤</span></div>
+        <div class="sheet" id="sheet" role="dialog" aria-modal="false" aria-label="Post aperto">
+          <div class="pic" id="pic"><button class="x" id="close" aria-label="Torna al feed">✕</button><span class="sp">Sponsorizzato</span></div>
+          <div class="act">
+            <p class="q">È un annuncio della campagna?</p>
+            <div class="btns"><button class="ad" id="b-ad">🚩 È propaganda</button><button id="b-no">👍 Post normale</button></div>
+            <div class="ver" aria-live="polite">
+              <span class="tag" id="v-tag"></span>
+              <div class="you" id="v-you"></div>
+              <p id="v-txt"></p>
+              <button class="next" id="next">Prossimo post →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <div class="feed" id="feed"></div>
-  <div class="bar"><span id="count">0 segnalati</span><button class="btn" id="check" disabled>Verifica</button></div>
-
-  <div class="score" id="score" aria-live="polite">
-    <h2 id="s-title"></h2>
-    <p id="s-text"></p>
-    <p class="r-note" style="margin-top:4px">Gli annunci veri si travestivano da festival, videogioco, manuale di volo, cartolina turistica, video di cronaca: le stesse confezioni dei post qui accanto. È il metodo della campagna: confezioni leggere, facili da condividere, per un messaggio sempre uguale.</p>
-    <button class="btn" id="again" style="margin-top:10px">Rigioca</button>
+    <div class="side">
+      <p class="how">Scorri il feed e <b>tocca un post</b> per aprirlo. Decidi se è propaganda o un post normale: ti diciamo subito se hai ragione, e perché.</p>
+      <div class="tally">
+        <div><b class="red" id="t-found">0</b><span>annunci scoperti su 12</span></div>
+        <div><b id="t-ok">0</b><span>risposte giuste su <i id="t-done" style="font-style:normal">0</i></span></div>
+      </div>
+      <div class="prog" aria-hidden="true"><i id="prog"></i></div>
+      <div class="tips">
+        <b>Cosa guardare</b>
+        <ul>
+          <li>Chi viene indicato come <b style="display:inline">nemico</b>: un Paese o un gruppo di persone accusato di tutto.</li>
+          <li>Immagini <b style="display:inline">senza luogo né data</b>, con didascalie che dicono come leggerle.</li>
+          <li>La confezione leggera (festival, videogioco, cartolina) attorno a un messaggio politico.</li>
+        </ul>
+      </div>
+      <div class="end" id="end" aria-live="polite">
+        <h2 id="e-title"></h2>
+        <p id="e-txt"></p>
+        <button class="btn" id="again">Rigioca</button>
+      </div>
+    </div>
   </div>
 
+  <p class="r-note">I post normali sono illustrazioni create da Radar e non esistono sui social. Gli annunci veri sono fotogrammi e immagini della campagna.</p>
   <footer class="r-foot">
-    <span>Annunci: campagna anti-Qatar, documentata da M. O. Jones e S. Dsouza (2026). Gli altri post sono inventati</span>
+    <span>Annunci: campagna anti-Qatar, documentata da M. O. Jones e S. Dsouza (2026). Gli altri post sono creati da Radar</span>
     <span>Elaborazione Radar – QN</span>
   </footer>
 </main>
@@ -73,59 +138,84 @@
 <script>
 (function () {
   var R = Radar;
-  R.loadCSV("../data/trova.csv").then(function (rows) {
-    var items = rows.map(function (r, i) { return { ad: r["Tipo"] === "annuncio", img: r["Immagine"], x: r["Spiegazione"], i: i }; });
-    var shown = false;
+  var PLAY = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/></svg>';
+  var STACK = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="14.5" height="14.5" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 7v11.5A2.5 2.5 0 0 0 6.5 21H17" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+  R.loadCSV("../data/trova-feed.csv").then(function (rows) {
+    var items = rows.map(function (r) { return { id: r["Id"], ad: r["Tipo"] === "annuncio", vid: r["Video"] === "si", x: r["Spiegazione"], ans: null }; });
+    var order = [], cur = null;
+    var grid = d3.select("#grid"), sheet = document.getElementById("sheet");
 
-    function shuffle(a) { // ordine casuale a ogni partita
-      a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a;
-    }
+    function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
     function build() {
-      shown = false;
-      d3.select("#score").classed("on", false);
-      var posts = d3.select("#feed").selectAll("article").data(shuffle(items), function (d) { return d.i; }).join("article")
-        .attr("class", "post").attr("role", "button").attr("tabindex", 0).attr("aria-pressed", "false").order();
-      posts.html(function (d) {
-        // stessa presentazione per annunci veri e post inventati: si distinguono solo guardando
-        var body = '<div class="img" role="img" aria-label="Post sponsorizzato con immagine" style="background-image:url(../' + d.img + ')"></div>';
-        return '<div class="hd"><i></i>Sponsorizzato</div>' + body + '<span class="flag" aria-hidden="true">🚩</span>' +
-          '<div class="verdict"><b>' + (d.ad ? "Annuncio della campagna" : "Post inventato") + "</b>" + d.x + "</div>";
-      });
-      posts.on("click", function () { toggle(this); })
-        .on("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(this); } });
-      count();
+      items.forEach(function (d) { d.ans = null; });
+      order = shuffle(items);
+      grid.selectAll("button").remove();
+      grid.selectAll("button").data(order, function (d) { return d.id; }).join("button")
+        .attr("class", "tile").attr("role", "listitem").attr("aria-label", "Apri il post")
+        .style("background-image", function (d) { return "url(../video/feed/" + d.id + ".jpg)"; })
+        .html(function (d) { return d.vid ? PLAY : STACK; })
+        .on("click", function (ev, d) { open(d); });
+      document.getElementById("grid").scrollTop = 0;
+      d3.select("#end").classed("on", false);
+      tally();
+    }
+    function open(d) {
+      cur = d;
+      d3.select("#pic").style("background-image", "url(../video/feed/" + d.id + ".jpg)");
+      sheet.classList.toggle("done", d.ans !== null);
+      if (d.ans !== null) verdict(d);
+      sheet.classList.add("on");
+    }
+    function close() { sheet.classList.remove("on"); cur = null; }
+    function answer(saysAd) {
+      if (!cur || cur.ans !== null) return;
+      cur.ans = saysAd;
+      verdict(cur);
+      sheet.classList.add("done");
+      var right = saysAd === cur.ad;
+      grid.selectAll("button").filter(function (q) { return q === cur; })
+        .classed(cur.ad ? "r-ad" : "r-no", true).classed(right ? "right" : "wrong", true)
+        .html((cur.vid ? PLAY : STACK) + '<span class="res">' + (cur.ad ? "Campagna" : "Normale") + "</span>");
+      tally();
+    }
+    function verdict(d) {
+      var right = d.ans === d.ad;
+      d3.select("#v-tag").attr("class", "tag " + (d.ad ? "ad" : "no")).text(d.ad ? "Annuncio della campagna" : "Post normale, creato da Radar");
+      d3.select("#v-you").text(right ? "✓ Giusto" : (d.ad ? "✗ Ti è sfuggito" : "✗ Falso allarme"));
+      d3.select("#v-txt").text(d.x);
+    }
+    function tally() {
+      var done = items.filter(function (d) { return d.ans !== null; });
+      var ok = done.filter(function (d) { return d.ans === d.ad; }).length;
+      var found = done.filter(function (d) { return d.ad && d.ans; }).length;
+      d3.select("#t-found").text(found); d3.select("#t-ok").text(ok); d3.select("#t-done").text(done.length);
+      d3.select("#prog").style("width", (done.length / items.length * 100) + "%");
+      if (done.length === items.length) {
+        var wrongNo = items.filter(function (d) { return !d.ad && d.ans; }).length;
+        d3.select("#e-title").text(ok === items.length ? "🎯 Nessuno ti ha ingannato" : ok >= 20 ? "👏 Ottimo occhio" : ok >= 15 ? "🔎 Non male, ma la propaganda si mimetizza" : "😮 La propaganda si mimetizza bene");
+        d3.select("#e-txt").text("Hai scoperto " + found + (found === 1 ? " annuncio" : " annunci") + " su 12" + (wrongNo ? " e hai scambiato " + wrongNo + (wrongNo === 1 ? " post normale" : " post normali") + " per propaganda" : "") +
+          ". Su un feed vero non c'è nessuno a dirti la risposta: la campagna ha raccolto 533 milioni di esposizioni.");
+        d3.select("#end").classed("on", true);
+      }
       R.scheduleHeight();
     }
-    function toggle(el) {
-      if (shown) return;
-      el.classList.toggle("flagged");
-      el.setAttribute("aria-pressed", el.classList.contains("flagged"));
-      count();
+    function next() {
+      var i = order.indexOf(cur), n = order.length;
+      for (var k = 1; k <= n; k++) { var q = order[(i + k) % n]; if (q.ans === null) { scrollTo(q); open(q); return; } }
+      close();
     }
-    function count() {
-      var n = document.querySelectorAll(".post.flagged").length;
-      d3.select("#count").text(n + (n === 1 ? " segnalato" : " segnalati"));
-      d3.select("#check").property("disabled", n === 0 || shown);
+    function scrollTo(q) {
+      var el = grid.selectAll("button").filter(function (d) { return d === q; }).node();
+      if (el) { var g = document.getElementById("grid"); g.scrollTop = el.offsetTop - g.clientHeight / 3; }
     }
-    d3.select("#check").on("click", function () {
-      shown = true;
-      var hit = 0, miss = 0, wrong = 0;
-      d3.selectAll(".post").each(function (d, i) {
-        var f = this.classList.contains("flagged"), el = this;
-        if (d.ad && f) hit++; else if (d.ad) miss++; else if (f) wrong++;
-        setTimeout(function () { el.classList.add("shown", d.ad ? "ok-ad" : "ok-fake"); }, R.reduced ? 0 : i * 90);
-      });
-      var total = items.filter(function (d) { return d.ad; }).length;
-      var t = hit === total && wrong === 0 ? "🎯 Tutti scoperti!" : hit >= total - 1 ? "👏 Quasi perfetto" : hit >= total / 2 ? "🔎 Buon occhio, ma qualcuno è sfuggito" : "😮 La propaganda si mimetizza bene";
-      d3.select("#s-title").text(t);
-      d3.select("#s-text").text("Hai riconosciuto " + hit + (hit === 1 ? " annuncio" : " annunci") + " su " + total + (miss ? ", te ne sono sfuggiti " + miss : "") + (wrong ? " e hai segnalato " + wrong + (wrong === 1 ? " post innocuo" : " post innocui") : "") + ".");
-      d3.select("#score").classed("on", true);
-      d3.select("#check").property("disabled", true);
-      R.scheduleHeight();
-    });
-    d3.select("#again").on("click", function () { d3.select("#feed").selectAll("article").remove(); build(); });
+    d3.select("#b-ad").on("click", function () { answer(true); });
+    d3.select("#b-no").on("click", function () { answer(false); });
+    d3.select("#close").on("click", close);
+    d3.select("#next").on("click", next);
+    d3.select("#again").on("click", function () { close(); build(); });
+    document.addEventListener("keydown", function (ev) { if (ev.key === "Escape") close(); });
     build();
-  }).catch(function (e) { R.fail("#feed", e); });
+  }).catch(function (e) { R.fail("#grid", e); });
 })();
 </script>
 </body>

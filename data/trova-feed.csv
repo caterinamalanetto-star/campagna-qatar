@@ -1,0 +1,25 @@
+Id;Tipo;Video;Spiegazione
+a01;annuncio;si;«Qatar Productions presenta»: un finto festival. Al posto dei concerti ci sono cortei e bandiere dei Fratelli musulmani, e il Qatar diventa il regista di un'«invasione».
+a02;annuncio;si;La «grande sostituzione» detta in chiaro: «Vi stanno sostituendo», su immagini di folle di musulmani. Poi arrivano i presunti soldi del Qatar.
+a03;annuncio;si;«Attenzione: immagini reali»: scene di folla senza luogo né data, rimontate per suggerire un'invasione pagata dal Qatar. Era rivolto all'Italia.
+a04;annuncio;si;Imita un videogioco celebre con immagini generate dall'intelligenza artificiale e si chiude con «Missione compiuta: islamizzazione dell'Europa».
+a05;annuncio;si;Sembra un manuale di sicurezza in volo, ma invita a «controllare» i piloti musulmani. È comparso dopo l'incidente flydubai dell'ottobre 2026.
+a06;annuncio;si;Migranti che camminano lungo i binari e la scritta «Questa è un'invasione dell'Europa!», chiusa dal marchio «Save Europe, Stop Qatar».
+a07;annuncio;si;Un manifesto per il pubblico francese: il Qatar finanzierebbe i Fratelli musulmani per conquistare l'Europa.
+a08;annuncio;no;La sceicca Moza, madre dell'emiro, ritratta come la boss di un film di mafia. Secondo il rapporto è un attacco personale, che la colpisce come donna e come madre.
+a09;annuncio;no;«Non lasciate che a Notre-Dame succeda quello che è successo a Santa Sofia»: la paura che le chiese diventino moschee, rivolta alla Francia.
+a10;annuncio;no;«L'Ungheria è sicura perché Orbán costruisce recinzioni»: una cartolina usata per un messaggio contro i migranti e il Qatar.
+a11;annuncio;si;«L'Europa è sotto assedio» su persone con il volto coperto, poi «Il Qatar è dietro a tutto questo». Era rivolto all'Italia.
+a12;annuncio;si;Un finto telegiornale generato con l'intelligenza artificiale: un aereo abbattuto da «terroristi estremisti». Fa parte degli annunci usciti dopo l'incidente flydubai.
+n01;normale;si;Usa il formato del festival in piazza, come Euro Summer Fest, ma è solo una festa: nessun nemico, nessun complotto.
+n02;normale;si;Ha lo stesso stile da videogioco di Grand Theft Qatar, ma pubblicizza un gioco di viaggio. Nessun messaggio politico.
+n03;normale;si;È un normale avviso di bordo. L'annuncio della campagna usava lo stesso stile per mettere in sospetto i piloti musulmani.
+n04;normale;no;Una cartolina turistica e basta. Quella sull'Ungheria aggiungeva uno slogan politico contro i migranti.
+n05;normale;si;Un video di strada per un evento in città. Gli annunci della campagna usavano riprese simili, ma togliendo luogo e data.
+n06;normale;no;Un manifesto dipinto come quello francese sui Fratelli musulmani, ma parla di formaggi.
+n07;normale;si;Ha le stesse lettere giganti di «You are being replaced», sopra una folla, ma è l'invito a una corsa.
+n08;normale;si;Qui «attenzione» e «invasione» sono un avviso sanitario. Il segnale da guardare è il bersaglio: un insetto, non un gruppo di persone.
+n09;normale;no;Una locandina dorata come «The Godmother», ma per un film inventato: nessuna persona reale messa alla berlina.
+n10;normale;no;Due foto affiancate come nel manifesto su Notre-Dame, ma raccontano un restauro, senza evocare minacce.
+n11;normale;si;La banda rossa e le lettere grandi ricordano «L'Europa è sotto assedio», ma è un'allerta meteo con informazioni pratiche.
+n12;normale;si;Un telegiornale in cartone come quello sull'aereo, ma dà una notizia neutra e non dà la colpa a nessuno.
