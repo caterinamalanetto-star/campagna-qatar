@@ -40,7 +40,7 @@
   <div class="keys"><span><i style="background:color-mix(in srgb, var(--red) 40%, transparent)"></i>approva il messaggio</span><span><i style="background:color-mix(in srgb, var(--grey) 45%, transparent)"></i>lo respinge</span><span><i style="background:color-mix(in srgb, var(--blue) 35%, transparent)"></i>commenta la pubblicità in sé</span></div>
 
   <p class="sec">Contro chi si rivolgono i commenti</p>
-  <p class="sec-sub">Numero di commenti per tema; uno stesso commento può rientrare in più temi</p>
+  <p class="sec-sub">Tutti i 2.560 commenti, in tutte le lingue: numero di commenti per tema. Uno stesso commento può rientrare in più temi</p>
   <figure class="r-chart" id="pack" style="margin-top:6px"></figure>
   <div class="keys" id="tkey" style="margin-top:4px"></div>
   <p class="r-note">In rosso l'ostilità verso i bersagli dell'annuncio, in grigio gli altri temi. La classificazione è una lettura di un agente di intelligenza artificiale, indicativa.</p>
@@ -65,7 +65,7 @@
 
     var themes = res[1].map(function (r) { return { k: r["Tema"], v: R.num(r["Commenti"]), side: r["Lato"], ex: r["Esempio"] }; });
     d3.select("#tkey").selectAll("span").data(themes).join("span")
-      .html(function (d) { return '<i style="background:' + COL[d.side] + '"></i><b style="color:var(--ink)">' + d.v + "</b> " + d.k.toLowerCase(); });
+      .html(function (d) { return '<i style="background:' + COL[d.side] + '"></i><b style="color:var(--ink)">' + d.v + "</b> " + d.k; });
     var host = document.getElementById("pack");
     var tip = R.tooltip(host);
     R.dismissOutside(host, function () { tip.hide(); });
@@ -87,7 +87,10 @@
           .style("font-size", (big ? Math.min(28, d.r * 0.42) : Math.max(11, d.r * 0.5)) + "px").style("fill", "#fff").text(d.data.v);
         if (big) {
           var t = g.append("text").attr("class", "lab-c").attr("text-anchor", "middle").attr("y", 8).style("font-size", "12px").style("fill", "#fff").text(d.data.k);
-          R.wrap(t, d.r * 1.6, 1.2);
+          R.wrap(t, d.r * 1.5, 1.2);
+          var bb = t.node().getBBox(), num = g.select(".lab-n").node().getBBox();
+          var top = num.y, bot = bb.y + bb.height, half = Math.sqrt(Math.max(0, d.r * d.r - Math.pow(Math.max(Math.abs(top), Math.abs(bot)), 2)));
+          if (bot > d.r * 0.85 || bb.width / 2 > half + 2) { t.remove(); g.select(".lab-n").attr("dy", "0.35em").style("font-size", Math.max(11, Math.min(28, d.r * 0.5)) + "px"); }
         }
       });
       nodes.style("cursor", "pointer").on("pointerenter pointerdown", function (ev, d) {
