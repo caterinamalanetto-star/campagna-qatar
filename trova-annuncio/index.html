@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Trova l'annuncio – Radar QN</title>
+<title>Cronaca o propaganda? – Radar QN</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap">
@@ -29,7 +29,7 @@
   .tile .ic { position: absolute; top: 5px; right: 5px; width: 18px; height: 18px; color: #fff; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
   .tile .res { position: absolute; left: 0; right: 0; bottom: 0; padding: 4px 5px; font: 700 10px var(--sans); letter-spacing: 0.04em; text-transform: uppercase; color: #fff; text-align: left; }
   .tile.r-ad .res { background: rgba(209,69,47,0.95); }
-  .tile.r-no .res { background: rgba(60,62,64,0.92); }
+  .tile.r-no .res { background: rgba(31,79,209,0.92); }
   .tile.wrong::after { content: "✗"; position: absolute; top: 4px; left: 6px; font: 700 15px var(--sans); color: #fff; text-shadow: 0 1px 3px #000; }
   .tile.right::after { content: "✓"; position: absolute; top: 4px; left: 6px; font: 700 15px var(--sans); color: #fff; text-shadow: 0 1px 3px #000; }
   .nav { flex: none; height: 46px; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #e6e6e6; font-size: 19px; }
@@ -48,7 +48,8 @@
   .sheet.done .btns, .sheet.done .q { display: none; }
   .sheet.done .ver { display: block; }
   .ver .tag { display: inline-block; font: 700 11px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: #fff; padding: 3px 8px; border-radius: 4px; }
-  .ver .tag.ad { background: #d1452f; } .ver .tag.no { background: #555; }
+  .ver .tag.ad { background: #d1452f; } .ver .tag.no { background: #1f4fd1; }
+  .ver .src { font: 600 11px var(--sans); color: #666; }
   .ver .you { font: 700 15px var(--sans); margin: 8px 0 4px; }
   .ver p { margin: 0; font-size: 13px; line-height: 1.45; color: #333; }
   .ver .next { margin-top: 10px; width: 100%; font: 700 14px var(--sans); border: 0; border-radius: 12px; background: #111; color: #fff; padding: 10px; cursor: pointer; }
@@ -77,8 +78,8 @@
 <body>
 <main class="radar">
   <header>
-    <h1 class="r-title">Trova l'annuncio</h1>
-    <p class="r-sub">Un feed simulato: 12 post sono annunci veri della campagna anti-Qatar, 12 sono post normali creati da Radar con lo stesso stile. Riesci a riconoscere la propaganda?</p>
+    <h1 class="r-title">Cronaca o propaganda?</h1>
+    <p class="r-sub">Un feed simulato: 11 post sono annunci della campagna anti-Qatar, 11 sono notizie vere, con foto ANSA. Spesso mostrano le stesse scene. Riesci a distinguerli?</p>
   </header>
 
   <div class="stage">
@@ -90,12 +91,12 @@
         <div class="grid" id="grid" role="list" aria-label="Post del feed"></div>
         <div class="nav" aria-hidden="true"><span>🏠</span><span>🔍</span><span>➕</span><span>🎬</span><span>👤</span></div>
         <div class="sheet" id="sheet" role="dialog" aria-modal="false" aria-label="Post aperto">
-          <div class="pic" id="pic"><button class="x" id="close" aria-label="Torna al feed">✕</button><span class="sp">Sponsorizzato</span></div>
+          <div class="pic" id="pic"><button class="x" id="close" aria-label="Torna al feed">✕</button></div>
           <div class="act">
-            <p class="q">È un annuncio della campagna?</p>
-            <div class="btns"><button class="ad" id="b-ad">🚩 È propaganda</button><button id="b-no">👍 Post normale</button></div>
+            <p class="q">Cronaca o propaganda?</p>
+            <div class="btns"><button class="ad" id="b-ad">🚩 È propaganda</button><button id="b-no">📰 È cronaca</button></div>
             <div class="ver" aria-live="polite">
-              <span class="tag" id="v-tag"></span>
+              <span class="tag" id="v-tag"></span> <span class="src" id="v-src"></span>
               <div class="you" id="v-you"></div>
               <p id="v-txt"></p>
               <button class="next" id="next">Prossimo post →</button>
@@ -106,9 +107,9 @@
     </div>
 
     <div class="side">
-      <p class="how">Scorri il feed e <b>tocca un post</b> per aprirlo. Decidi se è propaganda o un post normale: ti diciamo subito se hai ragione, e perché.</p>
+      <p class="how">Scorri il feed e <b>tocca un post</b> per aprirlo. Decidi se è propaganda o cronaca: ti diciamo subito se hai ragione, e perché.</p>
       <div class="tally">
-        <div><b class="red" id="t-found">0</b><span>annunci scoperti su 12</span></div>
+        <div><b class="red" id="t-found">0</b><span>annunci scoperti su 11</span></div>
         <div><b id="t-ok">0</b><span>risposte giuste su <i id="t-done" style="font-style:normal">0</i></span></div>
       </div>
       <div class="prog" aria-hidden="true"><i id="prog"></i></div>
@@ -116,7 +117,7 @@
         <b>Cosa guardare</b>
         <ul>
           <li>Chi viene indicato come <b style="display:inline">nemico</b>: un Paese o un gruppo di persone accusato di tutto.</li>
-          <li>Immagini <b style="display:inline">senza luogo né data</b>, con didascalie che dicono come leggerle.</li>
+          <li>Immagini <b style="display:inline">senza luogo né data</b>: la cronaca dice sempre dove, quando e chi.</li>
           <li>La confezione leggera (festival, videogioco, cartolina) attorno a un messaggio politico.</li>
         </ul>
       </div>
@@ -128,9 +129,9 @@
     </div>
   </div>
 
-  <p class="r-note">I post normali sono illustrazioni create da Radar e non esistono sui social. Gli annunci veri sono fotogrammi e immagini della campagna.</p>
+  <p class="r-note">I titoli sopra le foto di cronaca sono di Radar, ripresi dai lanci ANSA. Gli annunci sono fotogrammi e immagini della campagna.</p>
   <footer class="r-foot">
-    <span>Annunci: campagna anti-Qatar, documentata da M. O. Jones e S. Dsouza (2026). Gli altri post sono creati da Radar</span>
+    <span>Annunci: campagna anti-Qatar, documentata da M. O. Jones e S. Dsouza (2026). Foto di cronaca: ANSA, ANSA/AFP, ANSA/EPA</span>
     <span>Elaborazione Radar – QN</span>
   </footer>
 </main>
@@ -141,7 +142,7 @@
   var PLAY = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/></svg>';
   var STACK = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="14.5" height="14.5" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 7v11.5A2.5 2.5 0 0 0 6.5 21H17" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
   R.loadCSV("../data/trova-feed.csv").then(function (rows) {
-    var items = rows.map(function (r) { return { id: r["Id"], ad: r["Tipo"] === "annuncio", vid: r["Video"] === "si", x: r["Spiegazione"], ans: null }; });
+    var items = rows.map(function (r) { return { id: r["Id"], ad: r["Tipo"] === "annuncio", vid: r["Video"] === "si", src: r["Fonte"], x: r["Spiegazione"], ans: null }; });
     var order = [], cur = null;
     var grid = d3.select("#grid"), sheet = document.getElementById("sheet");
 
@@ -175,13 +176,14 @@
       var right = saysAd === cur.ad;
       grid.selectAll("button").filter(function (q) { return q === cur; })
         .classed(cur.ad ? "r-ad" : "r-no", true).classed(right ? "right" : "wrong", true)
-        .html((cur.vid ? PLAY : STACK) + '<span class="res">' + (cur.ad ? "Campagna" : "Normale") + "</span>");
+        .html((cur.vid ? PLAY : STACK) + '<span class="res">' + (cur.ad ? "Propaganda" : "Cronaca") + "</span>");
       tally();
     }
     function verdict(d) {
       var right = d.ans === d.ad;
-      d3.select("#v-tag").attr("class", "tag " + (d.ad ? "ad" : "no")).text(d.ad ? "Annuncio della campagna" : "Post normale, creato da Radar");
-      d3.select("#v-you").text(right ? "✓ Giusto" : (d.ad ? "✗ Ti è sfuggito" : "✗ Falso allarme"));
+      d3.select("#v-tag").attr("class", "tag " + (d.ad ? "ad" : "no")).text(d.ad ? "Propaganda" : "Cronaca");
+      d3.select("#v-src").text(d.src);
+      d3.select("#v-you").text(right ? "✓ Giusto" : (d.ad ? "✗ Era propaganda" : "✗ Era una notizia vera"));
       d3.select("#v-txt").text(d.x);
     }
     function tally() {
@@ -192,8 +194,8 @@
       d3.select("#prog").style("width", (done.length / items.length * 100) + "%");
       if (done.length === items.length) {
         var wrongNo = items.filter(function (d) { return !d.ad && d.ans; }).length;
-        d3.select("#e-title").text(ok === items.length ? "🎯 Nessuno ti ha ingannato" : ok >= 20 ? "👏 Ottimo occhio" : ok >= 15 ? "🔎 Non male, ma la propaganda si mimetizza" : "😮 La propaganda si mimetizza bene");
-        d3.select("#e-txt").text("Hai scoperto " + found + (found === 1 ? " annuncio" : " annunci") + " su 12" + (wrongNo ? " e hai scambiato " + wrongNo + (wrongNo === 1 ? " post normale" : " post normali") + " per propaganda" : "") +
+        d3.select("#e-title").text(ok === items.length ? "🎯 Nessuno ti ha ingannato" : ok >= 19 ? "👏 Ottimo occhio" : ok >= 14 ? "🔎 Non male, ma la propaganda si mimetizza" : "😮 La propaganda si mimetizza bene");
+        d3.select("#e-txt").text("Hai scoperto " + found + (found === 1 ? " annuncio" : " annunci") + " su 11" + (wrongNo ? " e hai scambiato " + wrongNo + (wrongNo === 1 ? " notizia vera" : " notizie vere") + " per propaganda" : "") +
           ". Su un feed vero non c'è nessuno a dirti la risposta: la campagna ha raccolto 533 milioni di esposizioni.");
         d3.select("#end").classed("on", true);
       }
