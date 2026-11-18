@@ -11,7 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 <script src="../assets/radar.js"></script>
 <style>
-  .bar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; margin: 18px 0 12px; }
+  .bar { max-width: 480px; margin-left: auto; margin-right: auto; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; margin-top: 18px; margin-bottom: 12px; }
   .how { font-size: 15px; line-height: 1.5; margin: 0; max-width: 430px; }
   .how b { color: var(--red); }
   .tally { display: flex; gap: 22px; }
@@ -19,14 +19,21 @@
   .tally b { font: 700 30px var(--sans); line-height: 1; font-variant-numeric: tabular-nums; }
   .tally b.red { color: var(--red); }
   .tally span { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
-  .prog { height: 4px; border-radius: 2px; background: var(--rule); overflow: hidden; margin-bottom: 10px; }
+  .prog { height: 4px; border-radius: 2px; background: var(--rule); overflow: hidden; margin: 0 auto 10px; max-width: 480px; }
   .prog i { display: block; height: 100%; width: 0; background: var(--ink); transition: width 300ms ease; }
   /* griglia verticale, come la pagina Esplora */
-  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
-  @media (max-width: 559px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 2px; } }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; max-width: 480px; margin: 0 auto; }
+  @media (max-width: 559px) { .grid { gap: 2px; } }
   .tile { position: relative; display: block; width: 100%; aspect-ratio: 9 / 16; border: 0; padding: 0; background: #ccc center / cover no-repeat; cursor: pointer; overflow: hidden; }
   .tile:focus-visible { outline: 3px solid var(--blue); outline-offset: -3px; }
   .tile.open { box-shadow: inset 0 0 0 4px var(--ink); }
+  .tile video, .tile .kb, .det .pic video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .tile .kb { background: center / cover no-repeat; animation: kb 14s ease-in-out infinite alternate; }
+  .tile:nth-child(3n) .kb { animation-duration: 17s; animation-delay: -5s; }
+  .tile:nth-child(3n+1) .kb { animation-duration: 12s; animation-delay: -8s; }
+  @keyframes kb { from { transform: scale(1); } to { transform: scale(1.08) translate(-1.5%, -1%); } }
+  @media (prefers-reduced-motion: reduce) { .tile .kb { animation: none; } }
+  .det .pic { position: relative; overflow: hidden; }
   .tile .ic { position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; color: #fff; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
   .tile .res { position: absolute; left: 0; right: 0; bottom: 0; padding: 5px 6px; font: 700 11px var(--sans); letter-spacing: 0.04em; text-transform: uppercase; color: #fff; text-align: left; }
   .tile.r-ad .res { background: rgba(209,69,47,0.95); }
@@ -34,7 +41,7 @@
   .tile.right::after, .tile.wrong::after { position: absolute; top: 5px; left: 7px; font: 700 16px var(--sans); color: #fff; text-shadow: 0 1px 3px #000; }
   .tile.right::after { content: "✓"; } .tile.wrong::after { content: "✗"; }
   /* scheda che si apre sotto la riga */
-  .det { grid-column: 1 / -1; display: grid; grid-template-columns: 200px 1fr; gap: 18px; align-items: start; padding: 14px; margin: 6px 0 8px;
+  .det { grid-column: 1 / -1; display: grid; grid-template-columns: 150px 1fr; gap: 18px; align-items: start; padding: 14px; margin: 6px 0 8px;
     background: var(--tip-bg); border: 1px solid var(--rule); border-radius: 12px; animation: fi 260ms ease both; }
   @media (max-width: 559px) { .det { grid-template-columns: 120px 1fr; gap: 12px; padding: 10px; } }
   .det .pic { width: 100%; aspect-ratio: 9 / 16; border-radius: 8px; background: #000 center / cover no-repeat; }
@@ -54,7 +61,7 @@
   .tips { font-size: 14px; line-height: 1.5; border-left: 3px solid var(--red); padding-left: 12px; margin-top: 14px; }
   .tips b { display: block; margin-bottom: 4px; }
   .tips ul { margin: 0; padding-left: 18px; }
-  .end { display: none; margin-top: 18px; border-top: 3px solid var(--red); padding-top: 12px; }
+  .end { max-width: 480px; margin-left: auto; margin-right: auto; display: none; margin-top: 18px; border-top: 3px solid var(--red); padding-top: 12px; }
   .end.on { display: block; animation: fi 380ms ease both; }
   .end h2 { font-family: var(--serif); font-size: 24px; line-height: 1.15; margin: 0 0 6px; color: var(--title); }
   .end p { margin: 0 0 10px; font-size: 15px; line-height: 1.5; }
@@ -105,10 +112,16 @@
 <script>
 (function () {
   var R = Radar;
-  var V = "?v=5";
+  var V = "?v=6";
   var PLAY = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/></svg>';
   var STACK = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="14.5" height="14.5" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 7v11.5A2.5 2.5 0 0 0 6.5 21H17" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
   function img(d) { return "url(../video/feed/" + d.id + ".jpg" + V + ")"; }
+  // video in loop, senza audio; le foto si muovono piano, così il movimento non tradisce la risposta
+  function media(d) {
+    return d.vid ? '<video muted loop playsinline preload="none" disablepictureinpicture poster="../video/feed/' + d.id + '.jpg' + V + '" src="../video/feed/' + d.id + '.mp4' + V + '"></video>'
+      : '<span class="kb" style="background-image:' + img(d) + '"></span>';
+  }
+  function play(v) { var p = v.play(); if (p && p.catch) p.catch(function () {}); }
   R.loadCSV("../data/trova-feed.csv" + V).then(function (rows) {
     var items = rows.map(function (r) { return { id: r["Id"], ad: r["Tipo"] === "annuncio", vid: r["Video"] === "si", src: r["Fonte"], x: r["Spiegazione"], ans: null }; });
     var order = [], cur = null, det = null;
@@ -126,11 +139,17 @@
       d3.select(grid).selectAll("button.tile").data(order, function (d) { return d.id; }).join("button")
         .attr("class", "tile").attr("role", "listitem").attr("aria-label", "Apri il post")
         .style("background-image", img)
-        .html(function (d) { return d.vid ? PLAY : STACK; })
+        .html(media)
         .on("click", function (ev, d) { if (cur === d) closeDet(); else open(d); });
       d3.select("#end").classed("on", false);
       tally();
+      watch();
     }
+    // i video partono solo quando il riquadro è sullo schermo
+    var io = "IntersectionObserver" in window ? new IntersectionObserver(function (es) {
+      es.forEach(function (e) { var v = e.target.querySelector("video"); if (!v) return; if (e.isIntersecting && !R.reduced) { v.preload = "auto"; play(v); } else v.pause(); });
+    }, { threshold: 0.25 }) : null;
+    function watch() { grid.querySelectorAll("button.tile").forEach(function (t) { if (io) io.observe(t); else { var v = t.querySelector("video"); if (v) play(v); } }); }
     function cols() { return getComputedStyle(grid).gridTemplateColumns.split(" ").length; }
     function closeDet() { if (det) det.remove(); det = null; if (cur) tileOf(cur).classed("open", false); cur = null; R.scheduleHeight(); }
     function open(d) {
@@ -146,7 +165,7 @@
     }
     function fill() {
       var d = cur;
-      var html = '<div class="pic" style="background-image:' + img(d) + '"></div><div>';
+      var html = '<div class="pic" style="background-image:' + img(d) + '">' + media(d) + '</div><div>';
       if (d.ans === null) {
         html += '<p class="q">Cronaca o propaganda?</p><div class="btns"><button class="ad" data-a="1">🚩 È propaganda</button><button data-a="0">📰 È cronaca</button></div>' +
           '<div class="row"><button class="cl">Chiudi</button></div>';
@@ -157,6 +176,7 @@
           '<div class="row"><button class="next">Prossimo post →</button><button class="cl">Chiudi</button></div>';
       }
       det.innerHTML = html + "</div>";
+      var dv = det.querySelector("video"); if (dv) { dv.preload = "auto"; play(dv); }
       var s = det.querySelector(".src"); if (s) s.textContent = d.src;
       var p = det.querySelector("p.x"); if (p) p.textContent = d.x;
       det.querySelectorAll("[data-a]").forEach(function (b) { b.addEventListener("click", function () { answer(b.getAttribute("data-a") === "1"); }); });
@@ -169,7 +189,8 @@
       cur.ans = saysAd;
       var right = saysAd === cur.ad;
       tileOf(cur).classed(cur.ad ? "r-ad" : "r-no", true).classed(right ? "right" : "wrong", true)
-        .html((cur.vid ? PLAY : STACK) + '<span class="res">' + (cur.ad ? "Propaganda" : "Cronaca") + "</span>");
+        .html(media(cur) + '<span class="res">' + (cur.ad ? "Propaganda" : "Cronaca") + "</span>");
+      var tv = tileOf(cur).select("video").node(); if (tv) { tv.preload = "auto"; play(tv); }
       fill();
       tally();
     }
