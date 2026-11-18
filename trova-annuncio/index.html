@@ -209,9 +209,19 @@
       }
       R.scheduleHeight();
     }
+    // porta in vista il post appena aperto: la riga e la scheda sotto
+    // (dentro l'iframe scrollIntoView fa scorrere anche la pagina dell'articolo)
+    function reveal() {
+      if (!det || !cur) return;
+      var t = tileOf(cur).node();
+      setTimeout(function () {
+        try { (t || det).scrollIntoView({ behavior: R.reduced ? "auto" : "smooth", block: "start" }); }
+        catch (e) { (t || det).scrollIntoView(true); }
+      }, 60);
+    }
     function next() {
       var i = order.indexOf(cur), n = order.length;
-      for (var k = 1; k <= n; k++) { var q = order[(i + k) % n]; if (q.ans === null) { open(q); return; } }
+      for (var k = 1; k <= n; k++) { var q = order[(i + k) % n]; if (q.ans === null) { open(q); reveal(); return; } }
       closeDet();
     }
     d3.select("#again").on("click", build);
