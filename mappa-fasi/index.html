@@ -35,7 +35,8 @@
   .r-tip.pop .scr { position: relative; margin: 7px; border-radius: 20px; overflow: hidden; background: #000; aspect-ratio: 9 / 16; }
   .r-tip.pop .scr::before { content: ""; position: absolute; top: 6px; left: 50%; width: 46px; height: 12px; margin-left: -23px; border-radius: 8px; background: #1b1c1e; z-index: 2; }
   .r-tip.pop .scr video, .r-tip.pop .scr img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  .r-tip.pop .scr img { object-fit: contain; object-position: 50% 30%; }
+  .r-tip.pop .scr video, .r-tip.pop .scr img { object-fit: contain; object-position: 50% 35%; }
+  .r-tip.pop .scr .none { position: absolute; top: 34%; left: 12px; right: 12px; margin: 0; text-align: center; color: rgba(255,255,255,0.75); font-size: 12px; line-height: 1.35; }
   .r-tip.pop .cap { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 26px 9px 9px; color: #fff; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.82) 45%); font-size: 12px; line-height: 1.3; }
   .r-tip.pop .cap b { display: block; font-size: 14px; }
   .r-tip.pop .cap .v { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
@@ -49,7 +50,7 @@
 <main class="radar">
   <header>
     <h1 class="r-title">Dove è passata la campagna, fase per fase</h1>
-    <p class="r-sub">Esposizioni agli annunci della campagna anti-Qatar per Paese, in milioni. Scegli una fase e passa sopra un Paese per vedere uno dei suoi annunci</p>
+    <p class="r-sub">Esposizioni agli annunci della campagna anti-Qatar per Paese, in milioni. Scegli una fase e passa sopra un Paese per vedere un annuncio che ha ricevuto in quella fase</p>
   </header>
 
   <div class="seg" id="seg" role="tablist" aria-label="Fase della campagna"></div>
@@ -76,9 +77,16 @@
     { k: "Tre anni", emo: "🗓️", txt: "<b>Ottobre 2023-ottobre 2026.</b> Le tre fasi sommate" }
   ];
   var cur = 2;
-  // un annuncio per Paese (video in loop, per l'Ungheria un'immagine)
-  var MEDIA = { ITA: ["mp4", "in italiano"], FRA: ["mp4", "in francese"], DEU: ["mp4", "in tedesco"], GBR: ["mp4", "in inglese"],
-    USA: ["mp4", "in inglese"], LBN: ["mp4", "in francese"], HUN: ["jpg", "in inglese"] };
+  // un annuncio per Paese e per fase (mp4 = video in loop, jpg = immagine, null = niente da mostrare);
+  // nella vista «Tre anni» resta l'annuncio scelto per il Paese
+  var FASI = { GBR: ["mp4", "jpg", "mp4"], FRA: ["mp4", "jpg", "mp4"], DEU: ["mp4", null, "mp4"], HUN: [null, "jpg", null],
+    USA: ["mp4", null, "mp4"], ITA: [null, null, "mp4"], LBN: [null, null, "mp4"] };
+  var TUTTE = { ITA: "mp4", FRA: "mp4", DEU: "mp4", GBR: "mp4", USA: "mp4", LBN: "mp4", HUN: "jpg" };
+  function media(iso, i) {
+    if (i === 3) return TUTTE[iso] ? { type: TUTTE[iso], src: "../video/paesi/" + iso } : null;
+    var t = FASI[iso] && FASI[iso][i];
+    return t ? { type: t, src: "../video/paesi/fasi/" + iso + "-" + (i + 1) } : null;
+  }
 
   Promise.all([R.loadCSV("../data/mappa-esposizioni.csv"), fetch("../data/europa.geojson").then(function (r) { return r.json(); })]).then(function (res) {
     var rows = res[0].map(function (r) {
@@ -99,7 +107,7 @@
 
     var seg = d3.select("#seg").selectAll("button").data(PHASES).join("button")
       .attr("role", "tab").text(function (d) { return d.k; })
-      .on("click", function (ev, d) { cur = PHASES.indexOf(d); update(true); });
+      .on("click", function (ev, d) { cur = PHASES.indexOf(d); tip.hide(); var v = tip.node.querySelector("video"); if (v) v.pause(); update(true); });
 
     var host = document.getElementById("map");
     var tip = R.tooltip(host);
@@ -115,6 +123,7 @@
       }).join(""));
       d3.select("#note").text("Altri Paesi, non in mappa: " + f1(other.v[cur]) + " milioni. Gli Stati Uniti sono nel riquadro in basso a sinistra. Esposizioni: visualizzazioni registrate dalle piattaforme, non persone.");
       if (api && ready) api(animate);
+      d3.select(host).selectAll(".land").classed("has-media", function (f) { var d = byIso[f.properties.iso]; return !!(d && d.v[cur] > 0); });
     }
 
     R.responsive(host, function (W, phase) {
@@ -177,28 +186,27 @@
       api = draw;
       function pop(d, x, y) {
         bubs.classed("is-dimmed", function (q) { return q !== d; });
-        var m = MEDIA[d.iso], html;
+        var m = media(d.iso, cur), html;
         var cap = '<div class="cap"><b>' + d.k + '</b><span class="v">' + f1(d.v[cur]) + " <small>mln · " + PHASES[cur].k.toLowerCase() + "</small></span>" +
           '<div class="ph">F1 ' + f1(d.v[0]) + " · F2 " + f1(d.v[1]) + " · F3 " + f1(d.v[2]) + "</div></div>";
         if (m) {
-          var src = "../video/paesi/" + d.iso;
-          html = '<div class="scr">' + (m[0] === "mp4"
-            ? '<video src="' + src + '.mp4" poster="' + src + '.jpg" autoplay muted loop playsinline disablepictureinpicture></video>'
-            : '<img alt="Annuncio della campagna rivolto all\'' + d.k + '" src="' + src + '.jpg">') + cap + "</div>";
-        } else html = '<div class="scr" style="background:#222">' + cap + "</div>";
+          html = '<div class="scr">' + (m.type === "mp4"
+            ? '<video src="' + m.src + '.mp4" poster="' + m.src + '.jpg" autoplay muted loop playsinline disablepictureinpicture></video>'
+            : '<img alt="Annuncio della campagna rivolto a ' + d.k + '" src="' + m.src + '.jpg">') + cap + "</div>";
+        } else html = '<div class="scr" style="background:#222"><p class="none">Nessun annuncio da mostrare per questa fase</p>' + cap + "</div>";
         d3.select(tip.node).classed("pop", true);
         tip.show(html, x, y);
         var v = tip.node.querySelector("video"); if (v) { var p = v.play(); if (p && p.catch) p.catch(function () {}); }
       }
       ins.select("rect").style("pointer-events", "all").style("cursor", "pointer")
-        .on("pointerenter pointerdown", function () { pop(usa, usa.x + 30, usa.y - 10); })
+        .on("pointerenter pointerdown", function () { if (usa.v[cur] > 0) pop(usa, usa.x + 30, usa.y - 10); })
         .on("pointerleave", function (ev) { if (ev.pointerType === "mouse") unpop(); });
       function unpop() { tip.hide(); bubs.classed("is-dimmed", false); var v = tip.node.querySelector("video"); if (v) v.pause(); }
       bubs.on("pointerenter pointerdown", function (ev, d) { pop(d, d.x, d.y - 10); })
         .on("pointerleave", function (ev) { if (ev.pointerType === "mouse") unpop(); });
-      land.classed("has-media", function (f) { return !!(byIso[f.properties.iso] && MEDIA[f.properties.iso]); })
+      land.classed("has-media", function (f) { var d = byIso[f.properties.iso]; return !!(d && d.v[cur] > 0); })
         .on("pointerenter pointerdown", function (ev, f) {
-          var d = byIso[f.properties.iso]; if (!d || !MEDIA[d.iso]) return;
+          var d = byIso[f.properties.iso]; if (!d || !(d.v[cur] > 0)) return;
           pop(d, d.x, d.y - 10);
         })
         .on("pointerleave", function (ev, f) { if (ev.pointerType === "mouse" && byIso[f.properties.iso]) unpop(); });
