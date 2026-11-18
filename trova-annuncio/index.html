@@ -73,7 +73,7 @@
 <main class="radar">
   <header>
     <h1 class="r-title">Cronaca o propaganda?</h1>
-    <p class="r-sub">Un feed simulato: <span id="n-ad">9</span> post sono annunci della campagna anti-Qatar, <span id="n-no">11</span> sono notizie vere, con foto ANSA. Spesso mostrano le stesse scene. Riesci a distinguerli?</p>
+    <p class="r-sub">Un feed simulato: <span id="n-ad">10</span> post sono annunci della campagna anti-Qatar, gli altri sono notizie vere, con foto ANSA. Spesso mostrano le stesse scene. Riesci a distinguerli?</p>
   </header>
 
   <div class="bar">
@@ -126,7 +126,7 @@
     var items = rows.map(function (r) { return { id: r["Id"], ad: r["Tipo"] === "annuncio", vid: r["Video"] === "si", src: r["Fonte"], x: r["Spiegazione"], ans: null }; });
     var order = [], cur = null, det = null;
     var nAd = items.filter(function (d) { return d.ad; }).length;
-    d3.select("#n-ad").text(nAd); d3.select("#n-no").text(items.length - nAd); d3.select("#t-tot").text(nAd);
+    d3.select("#n-ad").text(nAd); d3.select("#t-tot").text(nAd);
     var grid = document.getElementById("grid");
 
     function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
